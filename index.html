@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Атмосфера — погода на 3D-глобусе</title>
+<meta name="description" content="Точная погода в любой точке планеты на интерактивном 3D-глобусе: прогноз на 16 дней, осадки, ветер, давление, качество воздуха, радар и живые спутниковые снимки облаков.">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='26' fill='%230b1c33' stroke='%237cc4ff' stroke-width='4'/%3E%3Cpath d='M10 36c8-6 16 6 24 0s14-8 20-2' fill='none' stroke='%23ffb35c' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<style>
+/* Layout: full-bleed globe in space; floating search top-left, layer dock bottom-left, weather sheet right (desktop) / bottom sheet (phone). */
+:root{
+  --space:#05070d; --panel:rgba(12,17,28,.86); --panel-solid:#0c111c; --line:rgba(150,180,220,.16);
+  --fg:#e8eef8; --muted:#8fa0b8; --ice:#7cc4ff; --sun:#ffb35c; --rain:#4aa3ff; --warn:#ff7a59; --ok:#5fd39b;
+  --display:"Unbounded","Onest",system-ui,sans-serif; --body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--space);color:var(--fg);font:15px/1.45 var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ice);outline-offset:2px}
+#map{position:fixed;inset:0}
+.maplibregl-ctrl-attrib{background:rgba(5,7,13,.6)!important;color:var(--muted)!important;font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--muted)!important}
+.maplibregl-ctrl-bottom-right{margin-bottom:env(safe-area-inset-bottom,0px)}
+
+/* ---- top bar ---- */
+.top{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:calc(12px + env(safe-area-inset-left,0px));z-index:5;display:flex;gap:8px;align-items:flex-start;width:min(420px,calc(100vw - 24px))}
+.brand{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;border-radius:14px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);font:700 13px var(--display);letter-spacing:.04em;white-space:nowrap}
+.brand svg{flex:none}
+.search{position:relative;flex:1;min-width:0}
+.search input{width:100%;height:46px;padding:0 44px 0 16px;border-radius:14px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);outline:none}
+.search input::placeholder{color:var(--muted)}
+.search input:focus{border-color:var(--ice)}
+.icon-btn{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);flex:none}
+.icon-btn:hover{border-color:var(--ice)}
+.search .locate{position:absolute;right:4px;top:4px;width:38px;height:38px;border:0;background:transparent;display:grid;place-items:center;border-radius:10px}
+.search .locate:hover{background:rgba(124,196,255,.12)}
+.results{position:absolute;top:52px;left:0;right:0;background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+.results button{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:10px 14px;border:0;background:none;text-align:left;border-bottom:1px solid var(--line)}
+.results button:last-child{border-bottom:0}
+.results button:hover,.results button.active{background:rgba(124,196,255,.1)}
+.results small{color:var(--muted)}
+
+/* ---- layer dock ---- */
+.dock{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.layers{background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:10px;width:min(300px,calc(100vw - 24px));max-height:min(64vh,520px);overflow:auto}
+.layers h3{margin:4px 6px 8px;font:600 11px var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.layer{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:10px;background:none;text-align:left}
+.layer:hover{background:rgba(124,196,255,.08)}
+.layer .sw{width:34px;height:34px;border-radius:9px;flex:none;border:1px solid var(--line)}
+.layer b{display:block;font-weight:600;font-size:14px}
+.layer small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
+.layer[aria-pressed="true"]{background:rgba(124,196,255,.14)}
+.layer[aria-pressed="true"] .sw{border-color:var(--ice);box-shadow:0 0 0 2px rgba(124,196,255,.35)}
+.layer .chk{margin-left:auto;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--muted);flex:none;display:grid;place-items:center}
+.layer[aria-pressed="true"] .chk{background:var(--ice);border-color:var(--ice)}
+.layer[aria-pressed="true"] .chk::after{content:"";width:8px;height:5px;border:2px solid #05070d;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.sep{height:1px;background:var(--line);margin:8px 4px}
+.stamp{font:12px var(--mono);color:var(--muted);padding:2px 8px 4px}
+
+/* radar timeline */
+.timeline{display:flex;align-items:center;gap:10px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:8px 12px;width:min(340px,calc(100vw - 24px))}
+.timeline input{flex:1;accent-color:var(--rain)}
+.timeline span{font:600 13px var(--mono);min-width:56px;text-align:right}
+.play{width:34px;height:34px;border-radius:50%;border:0;background:var(--rain);color:#05070d;display:grid;place-items:center;flex:none}
+
+/* ---- weather sheet ---- */
+.sheet{position:fixed;z-index:6;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:420px;background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.sheet[hidden]{display:none!important}
+.sheet-head{padding:18px 18px 12px;display:flex;gap:12px;align-items:flex-start;border-bottom:1px solid var(--line)}
+.grab{display:none}
+.place{flex:1;min-width:0}
+.place h2{margin:0;font:700 19px/1.2 var(--display);text-wrap:balance}
+.place p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.coords{font:12px var(--mono);color:var(--muted)}
+.head-actions{display:flex;gap:6px}
+.head-actions .icon-btn{width:38px;height:38px;border-radius:11px}
+.star[aria-pressed="true"] svg{fill:var(--sun);stroke:var(--sun)}
+.sheet-body{overflow:auto;padding:0 18px 18px;flex:1;overscroll-behavior:contain}
+.now{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;padding:18px 0 14px}
+.now .big{font:500 64px/1 var(--display);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.now .wx-ico{width:64px;height:64px}
+.now .desc{grid-column:1/-1;font-size:16px;font-weight:600}
+.now .feel{grid-column:1/-1;color:var(--muted);font-size:14px}
+.localtime{font:13px var(--mono);color:var(--muted)}
+.section{padding:14px 0;border-top:1px solid var(--line)}
+.section h4{margin:0 0 10px;font:600 11px var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.section h4 span{text-transform:none;letter-spacing:0;font:12px var(--mono)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cell{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.cell small{display:block;color:var(--muted);font-size:12px}
+.cell b{display:block;font:600 18px var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell em{display:block;font-style:normal;color:var(--muted);font-size:12px}
+.wind-arrow{display:inline-block;transition:transform .3s}
+.hourly{overflow-x:auto;margin:0 -18px;padding:0 18px;scrollbar-width:thin}
+.hourly svg{display:block}
+.days{display:flex;flex-direction:column}
+.day{display:grid;grid-template-columns:62px 28px 1fr 64px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.day:last-child{border-bottom:0}
+.day .dname{font-weight:600;font-size:14px}
+.day .dname small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.day .range{display:flex;align-items:center;gap:8px;font:13px var(--mono)}
+.day .range .lo{color:var(--muted);width:30px;text-align:right}
+.day .range .hi{width:30px}
+.bar{position:relative;flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.07)}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.day .pr{font:12px var(--mono);color:var(--rain);text-align:right}
+.day .pr small{display:block;color:var(--muted)}
+.aqi{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.aqi .dot{width:14px;height:14px;border-radius:50%}
+.loading{padding:40px 0;text-align:center;color:var(--muted)}
+.err{padding:14px;border-radius:12px;background:rgba(255,122,89,.1);border:1px solid rgba(255,122,89,.35);color:#ffc2b1;margin-top:14px}
+.err button{margin-top:8px;padding:6px 12px;border-radius:8px;border:1px solid currentColor;background:none}
+.favs{display:flex;gap:6px;flex-wrap:wrap;width:min(420px,calc(100vw - 24px))}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:13px;white-space:nowrap}
+.chip:hover{border-color:var(--ice)}
+.toolbar{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));z-index:4;display:flex;flex-direction:column;gap:8px}
+body.sheet-open .toolbar{right:calc(444px + env(safe-area-inset-right,0px))}
+.temp-marker{font:600 12px var(--mono);padding:3px 7px;border-radius:999px;color:#05070d;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap;border:1px solid rgba(0,0,0,.25)}
+.pin{width:22px;height:22px;border-radius:50%;background:var(--sun);border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,179,92,.3),0 4px 10px rgba(0,0,0,.5)}
+.legend{display:flex;align-items:center;gap:6px;font:11px var(--mono);color:var(--muted);padding:0 8px 6px}
+.legend i{flex:1;height:6px;border-radius:3px}
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(34px + env(safe-area-inset-bottom,0px));z-index:3;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--muted);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);pointer-events:none;transition:opacity .4s;white-space:nowrap}
+.toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9;background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:calc(100vw - 32px)}
+.unit-toggle{font:600 13px var(--mono)}
+
+@media (max-width:760px){
+  .brand span{display:none}
+  .brand{padding:0 12px}
+  .sheet{left:0;right:0;bottom:0;top:auto;width:auto;height:62vh;border-radius:22px 22px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .sheet.min{height:150px}
+  .grab{display:block;width:42px;height:5px;border-radius:3px;background:rgba(255,255,255,.25);margin:8px auto 0;border:0;padding:0}
+  .sheet-head{padding-top:10px}
+  body.sheet-open .toolbar{right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(62vh + 12px)}
+  body.sheet-open.sheet-min .toolbar{bottom:162px}
+  body.sheet-open .dock{display:none}
+  body.sheet-open .hint{display:none}
+  .layers{max-height:52vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Интерактивный глобус"></div>
+
+<div class="top">
+  <div class="brand" aria-label="Атмосфера">
+    <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="#0b1c33" stroke="#7cc4ff" stroke-width="5"/><path d="M10 36c8-6 16 6 24 0s14-8 20-2" fill="none" stroke="#ffb35c" stroke-width="5" stroke-linecap="round"/></svg>
+    <span>АТМОСФЕРА</span>
+  </div>
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+    <div class="search">
+      <input id="q" type="search" placeholder="Город или страна" autocomplete="off" aria-label="Поиск места" role="combobox" aria-expanded="false" aria-controls="results">
+      <button class="locate" id="locate" title="Моё местоположение" aria-label="Показать погоду в моём местоположении">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <div class="results" id="results" role="listbox" hidden></div>
+    </div>
+    <div class="favs" id="favs"></div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="timeline" id="timeline" hidden>
+    <button class="play" id="play" aria-label="Воспроизвести анимацию радара"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+    <input type="range" id="frame" min="0" max="0" value="0" aria-label="Время снимка радара">
+    <span id="frameTime">—</span>
+  </div>
+  <div class="layers" id="layers" hidden>
+    <h3>Основа</h3>
+    <div id="baseList"></div>
+    <div class="sep"></div>
+    <h3>Слои погоды</h3>
+    <div id="overlayList"></div>
+    <div class="legend" id="tempLegend" hidden><span>−30°</span><i id="legendBar"></i><span>+40°</span></div>
+    <div class="stamp" id="satStamp"></div>
+  </div>
+  <button class="icon-btn" id="layersBtn" aria-expanded="false" aria-controls="layers" title="Слои">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>
+  </button>
+</div>
+
+<div class="toolbar">
+  <button class="icon-btn unit-toggle" id="units" title="Единицы измерения">°C</button>
+  <button class="icon-btn" id="spin" title="Вращение глобуса" aria-pressed="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+  </button>
+  <button class="icon-btn" id="home" title="Показать всю планету">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>
+  </button>
+</div>
+
+<div class="hint" id="hint">Нажмите на любую точку планеты, чтобы увидеть погоду</div>
+
+<aside class="sheet" id="sheet" hidden aria-live="polite">
+  <button class="grab" id="grab" aria-label="Свернуть или развернуть панель"></button>
+  <div class="sheet-head">
+    <div class="place">
+      <h2 id="placeName">—</h2>
+      <p id="placeSub"></p>
+      <div class="coords" id="placeCoords"></div>
+    </div>
+    <div class="head-actions">
+      <button class="icon-btn star" id="star" aria-pressed="false" title="В избранное" aria-label="Добавить в избранное">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>
+      </button>
+      <button class="icon-btn" id="close" title="Закрыть" aria-label="Закрыть панель">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="sheet-body" id="body"></div>
+</aside>
+
+<script>
+"use strict";
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("atm:"+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("atm:"+k, JSON.stringify(v)); }catch(e){} }
+};
+let units = store.get("units", "C");
+const T = c => c==null ? "—" : Math.round(units==="F" ? c*9/5+32 : c);
+const Tu = c => c==null ? "—" : T(c)+"°";
+function toast(msg){ const t=document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 3500); }
+async function getJSON(url, ms=15000, tries=3){
+  for(let a=1;;a++){
+    const ctl = new AbortController(); const id = setTimeout(()=>ctl.abort(), ms);
+    try{
+      const r = await fetch(url, {signal: ctl.signal});
+      if(!r.ok){ const e = new Error("HTTP "+r.status); e.retry = r.status>=500 || r.status===429; throw e; }
+      return await r.json();
+    }catch(e){
+      if(a>=tries || e.retry===false) throw e;
+      await new Promise(res=>setTimeout(res, 700*a));
+    }finally{ clearTimeout(id); }
+  }
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* temperature colour scale (°C) */
+const TSTOPS = [[-40,"#c7b7ff"],[-30,"#8e7cf0"],[-20,"#5a6ee8"],[-10,"#3f9de8"],[0,"#7fd6f5"],[8,"#8ee6b0"],[15,"#d9ee7a"],[22,"#ffd35c"],[28,"#ff9d4a"],[34,"#ff6a3d"],[42,"#d42c5c"]];
+function tColor(c){
+  if(c<=TSTOPS[0][0]) return TSTOPS[0][1];
+  for(let i=1;i<TSTOPS.length;i++){ if(c<=TSTOPS[i][0]){ const [a,ca]=TSTOPS[i-1],[b,cb]=TSTOPS[i]; return mix(ca,cb,(c-a)/(b-a)); } }
+  return TSTOPS[TSTOPS.length-1][1];
+}
+function mix(a,b,t){ const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)); const x=p(a),y=p(b); return "#"+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,"0")).join(""); }
+$("#legendBar").style.background = "linear-gradient(90deg,"+TSTOPS.filter(s=>s[0]>=-30&&s[0]<=42).map(s=>s[1]).join(",")+")";
+
+/* WMO weather codes */
+const WMO = {0:["Ясно","clear"],1:["Преимущественно ясно","clear"],2:["Переменная облачность","partly"],3:["Пасмурно","cloud"],45:["Туман","fog"],48:["Туман с изморозью","fog"],51:["Слабая морось","drizzle"],53:["Морось","drizzle"],55:["Сильная морось","drizzle"],56:["Ледяная морось","drizzle"],57:["Сильная ледяная морось","drizzle"],61:["Небольшой дождь","rain"],63:["Дождь","rain"],65:["Сильный дождь","rain"],66:["Ледяной дождь","rain"],67:["Сильный ледяной дождь","rain"],71:["Небольшой снег","snow"],73:["Снег","snow"],75:["Сильный снег","snow"],77:["Снежные зёрна","snow"],80:["Небольшой ливень","rain"],81:["Ливень","rain"],82:["Сильный ливень","rain"],85:["Снегопад","snow"],86:["Сильный снегопад","snow"],95:["Гроза","storm"],96:["Гроза с градом","storm"],99:["Сильная гроза с градом","storm"]};
+function icon(code, day=1, size=28){
+  const k = (WMO[code]||["","cloud"])[1];
+  const sun = day ? `<circle cx="24" cy="24" r="9" fill="#ffb35c"/><g stroke="#ffb35c" stroke-width="3" stroke-linecap="round"><path d="M24 6v5M24 37v5M6 24h5M37 24h5M11.3 11.3l3.5 3.5M33.2 33.2l3.5 3.5M11.3 36.7l3.5-3.5M33.2 14.8l3.5-3.5"/></g>` : `<path d="M30 10a14 14 0 1 0 10 22 12 12 0 0 1-10-22z" fill="#c9d6ff"/>`;
+  const cloud = (y=0,f="#cfd9e8") => `<path d="M14 ${38+y}h22a8 8 0 0 0 0-16 11 11 0 0 0-21-2 7 7 0 0 0-1 18z" fill="${f}"/>`;
+  const drops = c => `<g stroke="${c}" stroke-width="3" stroke-linecap="round"><path d="M17 42l-2 4M25 42l-2 4M33 42l-2 4"/></g>`;
+  let g;
+  switch(k){
+    case "clear": g = sun; break;
+    case "partly": g = `<g transform="translate(-6 -6) scale(.8)">${sun}</g>`+cloud(2); break;
+    case "cloud": g = cloud(-2,"#aab7c9"); break;
+    case "fog": g = `<g stroke="#aab7c9" stroke-width="3.5" stroke-linecap="round"><path d="M8 18h32M5 26h38M10 34h28"/></g>`; break;
+    case "drizzle": g = cloud(-6)+`<g fill="#4aa3ff"><circle cx="17" cy="42" r="2"/><circle cx="25" cy="44" r="2"/><circle cx="33" cy="42" r="2"/></g>`; break;
+    case "rain": g = cloud(-6,"#9fb0c6")+drops("#4aa3ff"); break;
+    case "snow": g = cloud(-6)+`<g fill="#fff"><circle cx="17" cy="42" r="2.5"/><circle cx="25" cy="45" r="2.5"/><circle cx="33" cy="42" r="2.5"/></g>`; break;
+    case "storm": g = cloud(-6,"#8c99ad")+`<path d="M26 32l-6 9h5l-3 7 9-11h-5l3-5z" fill="#ffd35c"/>`; break;
+  }
+  return `<svg class="wx-ico" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true">${g}</svg>`;
+}
+const DIRS = ["С","ССВ","СВ","ВСВ","В","ВЮВ","ЮВ","ЮЮВ","Ю","ЮЮЗ","ЮЗ","ЗЮЗ","З","ЗСЗ","СЗ","ССЗ"];
+const dirName = d => DIRS[Math.round(d/22.5)%16];
+const windWord = ms => ms<0.3?"штиль":ms<3.4?"слабый":ms<8?"умеренный":ms<10.8?"свежий":ms<13.9?"сильный":ms<17.2?"крепкий":ms<24.5?"шторм":"ураган";
+const uvWord = u => u<3?"низкий":u<6?"умеренный":u<8?"высокий":u<11?"очень высокий":"экстремальный";
+const fmtTime = iso => iso ? iso.slice(11,16) : "—";
+const DOW = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"], MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+
+/* ================= map ================= */
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+const gibs = (layer, tms, ext, bust="") => `${GIBS}/${layer}/default/default/${tms}/{z}/{y}/{x}.${ext}${bust}`;
+
+const BASES = {
+  sat:   {name:"Спутник (детально)", sub:"Снимки высокого разрешения, Esri", sw:"linear-gradient(135deg,#1d3a2a,#3c5a34 45%,#1b3150)", tiles:[`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`], max:19, attr:"Снимки © Esri, Maxar, Earthstar Geographics"},
+  today: {name:"Земля сегодня", sub:"Снимок всей планеты за сегодня, NASA VIIRS", sw:"linear-gradient(135deg,#f2f5fa,#5d8ab8 50%,#2f5b3a)", tiles:[gibs("VIIRS_SNPP_CorrectedReflectance_TrueColor","GoogleMapsCompatible_Level9","jpg")], max:9, attr:"NASA GIBS / VIIRS"},
+  dark:  {name:"Ночная карта", sub:"Тёмная карта с границами", sw:"linear-gradient(135deg,#0c111c,#1e2a3d)", tiles:[`${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`], max:16, attr:"© Esri"}
+};
+const OVERLAYS = {
+  labels: {name:"Названия и границы", sub:"Страны, регионы, города", sw:"linear-gradient(135deg,#253247,#536b8f)", def:true},
+  temps:  {name:"Температура в городах", sub:"Сейчас, в 90 городах мира", sw:"linear-gradient(90deg,#3f9de8,#8ee6b0,#ffd35c,#ff6a3d)", def:true},
+  clouds: {name:"Облака сейчас", sub:"Спутники GOES и Himawari, каждые 10 мин", sw:"linear-gradient(135deg,#e9eef5,#7d93ad 60%,#28344a)", def:false},
+  ir:     {name:"Облака (инфракрасный)", sub:"Видно и ночью; высокие облака ярче", sw:"linear-gradient(135deg,#fff,#7c8ea8 50%,#000)", def:false},
+  radar:  {name:"Радар осадков", sub:"Дождь и снег за последние 2 часа", sw:"linear-gradient(135deg,#38c172,#ffd35c 50%,#e8455c)", def:false},
+  precip: {name:"Осадки со спутника", sub:"Вся планета, NASA IMERG", sw:"linear-gradient(135deg,#2fa8ff,#7b5cff 50%,#ff4fa0)", def:false}
+};
+let base = store.get("base","sat");
+if(!BASES[base]) base = "sat";
+const on = Object.assign(Object.fromEntries(Object.entries(OVERLAYS).map(([k,v])=>[k,v.def])), store.get("overlays",{}));
+
+const map = new maplibregl.Map({
+  container:"map",
+  style:{version:8, projection:{type:"globe"}, sources:{}, layers:[{id:"bg",type:"background",paint:{"background-color":"#05070d"}}],
+    sky:{"sky-color":"#0a1830","horizon-color":"#3b6aa8","fog-color":"#0d1d38","atmosphere-blend":["interpolate",["linear"],["zoom"],0,1,5,1,7,0]}},
+  center: store.get("center",[30,25]), zoom: window.innerWidth<760 ? 0.9 : 1.6,
+  maxPitch: 70, attributionControl:{compact:true}
+});
+map.dragRotate.enable(); map.touchZoomRotate.enableRotation();
+
+function buildMapLayers(){
+  for(const [k,b] of Object.entries(BASES)){
+    map.addSource("base-"+k,{type:"raster",tiles:b.tiles,tileSize:256,maxzoom:b.max,attribution:b.attr});
+    map.addLayer({id:"base-"+k,type:"raster",source:"base-"+k,layout:{visibility:k===base?"visible":"none"},paint:{"raster-fade-duration":200}});
+  }
+  addSatellite();
+  map.addSource("precip",{type:"raster",tiles:[gibs("IMERG_Precipitation_Rate","GoogleMapsCompatible_Level6","png")],tileSize:256,maxzoom:6,attribution:"NASA GPM IMERG"});
+  map.addLayer({id:"precip",type:"raster",source:"precip",layout:{visibility:"none"},paint:{"raster-opacity":.85}});
+  map.addSource("labels",{type:"raster",tiles:[`${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`],tileSize:256,maxzoom:19});
+  map.addLayer({id:"labels",type:"raster",source:"labels",layout:{visibility:"none"}});
+  applyOverlays();
+}
+
+/* geostationary satellites: GOES-East (Americas/Atlantic), GOES-West (Pacific), Himawari (Asia/Oceania) */
+let satBust = "";
+const SATS = [
+  {id:"goes-e", vis:"GOES-East_ABI_GeoColor", visTms:"GoogleMapsCompatible_Level7", ir:"GOES-East_ABI_Band13_Clean_Infrared"},
+  {id:"goes-w", vis:"GOES-West_ABI_GeoColor", visTms:"GoogleMapsCompatible_Level7", ir:"GOES-West_ABI_Band13_Clean_Infrared"},
+  {id:"hima",   vis:"Himawari_AHI_Band13_Clean_Infrared", visTms:"GoogleMapsCompatible_Level6", ir:"Himawari_AHI_Band13_Clean_Infrared"}
+];
+function addSatellite(){
+  for(const s of SATS){
+    for(const kind of ["vis","ir"]){
+      const id = `${kind}-${s.id}`, layer = s[kind], tms = kind==="vis" ? s.visTms : "GoogleMapsCompatible_Level6";
+      if(map.getLayer(id)) map.removeLayer(id);
+      if(map.getSource(id)) map.removeSource(id);
+      map.addSource(id,{type:"raster",tiles:[gibs(layer,tms,"png",satBust)],tileSize:256,maxzoom:tms.endsWith("7")?7:6,attribution:"NASA GIBS, NOAA GOES, JMA Himawari"});
+      const before = map.getLayer("precip") ? "precip" : undefined;
+      map.addLayer({id,type:"raster",source:id,layout:{visibility:"none"},paint:{"raster-opacity": kind==="ir" ? .75 : 1, "raster-fade-duration":300}}, before);
+    }
+  }
+  $("#satStamp").textContent = "Облака обновлены: " + new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"});
+}
+setInterval(()=>{ if(on.clouds||on.ir){ satBust="?t="+Date.now(); addSatellite(); applyOverlays(); } }, 10*60*1000);
+
+function vis(id, v){ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",v?"visible":"none"); }
+function applyOverlays(){
+  for(const k of Object.keys(BASES)) vis("base-"+k, k===base);
+  for(const s of SATS){ vis("vis-"+s.id, on.clouds); vis("ir-"+s.id, on.ir && !on.clouds); }
+  if(on.clouds && on.ir) for(const s of SATS) vis("ir-"+s.id, false);
+  vis("precip", on.precip);
+  vis("labels", on.labels);
+  if(on.radar) startRadar(); else stopRadar();
+  if(on.temps) showTemps(); else hideTemps();
+  $("#tempLegend").hidden = !on.temps;
+  $("#satStamp").hidden = !(on.clouds||on.ir);
+  store.set("base",base); store.set("overlays",on);
+}
+
+/* layer panel UI */
+function layerBtn(key, def, pressed, onClick){
+  const b = document.createElement("button");
+  b.className="layer"; b.setAttribute("aria-pressed", pressed);
+  b.innerHTML = `<span class="sw" style="background:${def.sw}"></span><span><b>${esc(def.name)}</b><small>${esc(def.sub)}</small></span><span class="chk"></span>`;
+  b.onclick = onClick; return b;
+}
+function renderLayerUI(){
+  const bl = $("#baseList"); bl.innerHTML="";
+  for(const [k,d] of Object.entries(BASES)) bl.appendChild(layerBtn(k,d,k===base,()=>{ base=k; applyOverlays(); renderLayerUI(); }));
+  const ol = $("#overlayList"); ol.innerHTML="";
+  for(const [k,d] of Object.entries(OVERLAYS)) ol.appendChild(layerBtn(k,d,!!on[k],()=>{
+    on[k]=!on[k];
+    if(k==="clouds" && on.clouds) on.ir=false;
+    if(k==="ir" && on.ir) on.clouds=false;
+    applyOverlays(); renderLayerUI();
+    if((k==="clouds"||k==="ir") && on[k]) toast("Облака: Америка, Тихий океан, Азия и Австралия. Над Европой и Африкой эти спутники не снимают — включите «Земля сегодня».");
+  }));
+}
+$("#layersBtn").onclick = () => { const p=$("#layers"); p.hidden=!p.hidden; $("#layersBtn").setAttribute("aria-expanded", !p.hidden); };
+
+/* ================= radar (RainViewer) ================= */
+let radar = {frames:[], idx:0, timer:null, host:"", loaded:false};
+async function startRadar(){
+  $("#timeline").hidden = false;
+  if(radar.loaded) { showFrame(radar.idx); return; }
+  try{
+    const d = await getJSON("https://api.rainviewer.com/public/weather-maps.json");
+    radar.host = d.host; radar.frames = (d.radar.past||[]).concat(d.radar.nowcast||[]);
+    radar.frames.forEach((f,i)=>{
+      const id="radar-"+i;
+      map.addSource(id,{type:"raster",tiles:[`${d.host}${f.path}/256/{z}/{x}/{y}/2/1_1.png`],tileSize:256,maxzoom:7,attribution:"Радар © RainViewer"});
+      map.addLayer({id,type:"raster",source:id,layout:{visibility:"none"},paint:{"raster-opacity":0,"raster-opacity-transition":{duration:0},"raster-fade-duration":0}});
+    });
+    radar.loaded = true;
+    const f = $("#frame"); f.max = radar.frames.length-1; radar.idx = (d.radar.past||[]).length-1; f.value=radar.idx;
+    showFrame(radar.idx);
+  }catch(e){ toast("Не удалось загрузить радар. Проверьте интернет и включите слой ещё раз."); on.radar=false; $("#timeline").hidden=true; renderLayerUI(); }
+}
+function showFrame(i){
+  radar.frames.forEach((f,j)=>{ const id="radar-"+j; if(!map.getLayer(id)) return; map.setLayoutProperty(id,"visibility","visible"); map.setPaintProperty(id,"raster-opacity", j===i ? .8 : 0); });
+  radar.idx=i; $("#frame").value=i;
+  const fr = radar.frames[i]; if(!fr) return;
+  const t = new Date(fr.time*1000);
+  const pastCount = radar.frames.filter(x=>x.time*1000<=Date.now()).length;
+  $("#frameTime").textContent = t.toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}) + (i>=pastCount ? "*" : "");
+}
+function stopRadar(){
+  $("#timeline").hidden = true; pause();
+  radar.frames.forEach((f,j)=> vis("radar-"+j,false));
+}
+function pause(){ clearInterval(radar.timer); radar.timer=null; $("#play").innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>'; }
+$("#play").onclick = () => {
+  if(radar.timer){ pause(); return; }
+  $("#play").innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+  radar.timer = setInterval(()=> showFrame((radar.idx+1)%radar.frames.length), 600);
+};
+$("#frame").oninput = e => { pause(); showFrame(+e.target.value); };
+
+/* ================= city temperatures ================= */
+const CITIES = [["Москва",55.76,37.62],["Санкт-Петербург",59.94,30.31],["Минск",53.9,27.57],["Киев",50.45,30.52],["Варшава",52.23,21.01],["Берлин",52.52,13.4],["Париж",48.86,2.35],["Лондон",51.51,-0.13],["Мадрид",40.42,-3.7],["Рим",41.9,12.5],["Стокгольм",59.33,18.07],["Хельсинки",60.17,24.94],["Рейкьявик",64.15,-21.94],["Стамбул",41.01,28.98],["Афины",37.98,23.73],["Каир",30.04,31.24],["Лагос",6.52,3.38],["Найроби",-1.29,36.82],["Кейптаун",-33.92,18.42],["Касабланка",33.57,-7.59],["Дакар",14.72,-17.47],["Киншаса",-4.44,15.27],["Аддис-Абеба",9.03,38.74],["Эр-Рияд",24.71,46.68],["Дубай",25.2,55.27],["Тегеран",35.69,51.39],["Ташкент",41.3,69.24],["Алматы",43.24,76.89],["Новосибирск",55.03,82.92],["Екатеринбург",56.84,60.6],["Казань",55.8,49.11],["Сочи",43.6,39.73],["Якутск",62.03,129.73],["Норильск",69.35,88.2],["Владивосток",43.12,131.89],["Мумбаи",19.08,72.88],["Дели",28.61,77.21],["Бангкок",13.76,100.5],["Сингапур",1.35,103.82],["Джакарта",-6.21,106.85],["Пекин",39.9,116.4],["Шанхай",31.23,121.47],["Гонконг",22.32,114.17],["Сеул",37.57,126.98],["Токио",35.68,139.69],["Манила",14.6,120.98],["Улан-Батор",47.89,106.91],["Сидней",-33.87,151.21],["Перт",-31.95,115.86],["Окленд",-36.85,174.76],["Нью-Йорк",40.71,-74.01],["Майами",25.76,-80.19],["Чикаго",41.88,-87.63],["Лос-Анджелес",34.05,-118.24],["Сан-Франциско",37.77,-122.42],["Сиэтл",47.61,-122.33],["Ванкувер",49.28,-123.12],["Торонто",43.65,-79.38],["Анкоридж",61.22,-149.9],["Мехико",19.43,-99.13],["Гавана",23.11,-82.37],["Богота",4.71,-74.07],["Лима",-12.05,-77.04],["Сантьяго",-33.45,-70.67],["Буэнос-Айрес",-34.6,-58.38],["Сан-Паулу",-23.55,-46.63],["Рио-де-Жанейро",-22.91,-43.17],["Манаус",-3.12,-60.02],["Нуук",64.18,-51.72],["Гонолулу",21.31,-157.86],["Антананариву",-18.88,47.51],["Луанда",-8.84,13.23],["Хартум",15.5,32.56],["Багдад",33.31,44.37],["Карачи",24.86,67.0],["Дакка",23.81,90.41],["Ханой",21.03,105.85],["Тайбэй",25.03,121.57],["Дарвин",-12.46,130.84],["Мурманск",68.97,33.08],["Иркутск",52.29,104.28],["Баку",40.41,49.87],["Тбилиси",41.72,44.79],["Ереван",40.18,44.51],["Вильнюс",54.69,25.28],["Рига",56.95,24.11],["Прага",50.08,14.44],["Вена",48.21,16.37],["Амстердам",52.37,4.9],["Лиссабон",38.72,-9.14]];
+let cityData = null, cityMarkers = [], cityLoadedAt = 0;
+async function showTemps(){
+  if(!cityData || Date.now()-cityLoadedAt > 15*60*1000){
+    try{
+      const lat = CITIES.map(c=>c[1]).join(","), lon = CITIES.map(c=>c[2]).join(",");
+      const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&timezone=auto`, 20000);
+      cityData = (Array.isArray(d)?d:[d]).map((x,i)=>({name:CITIES[i][0], lat:CITIES[i][1], lon:CITIES[i][2], t:x.current.temperature_2m, code:x.current.weather_code}));
+      cityLoadedAt = Date.now();
+    }catch(e){ toast("Не удалось загрузить температуру городов."); return; }
+  }
+  if(!on.temps) return;
+  hideTemps();
+  for(const c of cityData){
+    const el = document.createElement("button");
+    el.className="temp-marker"; el.style.background = tColor(c.t);
+    el.textContent = `${c.name} ${Tu(c.t)}`; el.title = `${c.name}: ${(WMO[c.code]||[""])[0]}`;
+    el.addEventListener("click", ev => { ev.stopPropagation(); openPlace(c.lat, c.lon, {name:c.name}); });
+    cityMarkers.push(new maplibregl.Marker({element:el}).setLngLat([c.lon,c.lat]).addTo(map));
+  }
+  declutter();
+}
+function hideTemps(){ cityMarkers.forEach(m=>m.remove()); cityMarkers=[]; }
+/* hide marker labels that collide at low zoom */
+function declutter(){
+  if(!cityMarkers.length) return;
+  const boxes=[], c=map.getCenter(), rad=Math.PI/180;
+  for(const m of cityMarkers){
+    const el=m.getElement(), p=m.getLngLat();
+    /* skip cities on the far side of the globe */
+    const cosd = Math.sin(c.lat*rad)*Math.sin(p.lat*rad) + Math.cos(c.lat*rad)*Math.cos(p.lat*rad)*Math.cos((p.lng-c.lng)*rad);
+    if(map.getZoom()<5 && cosd < 0.25){ el.style.visibility="hidden"; continue; }
+    el.style.visibility="visible";
+    const r=el.getBoundingClientRect();
+    if(r.width===0) continue;
+    if(boxes.some(b=>!(r.right<b.left||r.left>b.right||r.bottom<b.top||r.top>b.bottom))) el.style.visibility="hidden";
+    else boxes.push(r);
+  }
+}
+map.on("moveend", declutter);
+
+/* ================= place / weather ================= */
+let current = null, pin = null;
+async function reverseName(lat, lon){
+  try{
+    const d = await getJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ru`, 8000);
+    const name = d.city || d.locality || d.principalSubdivision || d.countryName;
+    const sub = [d.city && d.principalSubdivision !== d.city ? d.principalSubdivision : "", d.countryName].filter(Boolean).join(", ");
+    if(!name){ return {name: oceanName(lat,lon), sub:""}; }
+    return {name, sub: sub===name ? "" : sub};
+  }catch(e){ return {name:"Выбранная точка", sub:""}; }
+}
+function oceanName(lat,lon){
+  if(lat>66) return "Северный Ледовитый океан"; if(lat<-60) return "Южный океан / Антарктида";
+  if(lon>20 && lon<120 && lat<25) return "Индийский океан";
+  if(lon>-70 && lon<20) return "Атлантический океан";
+  return "Тихий океан";
+}
+const fmtCoord = (lat,lon) => `${Math.abs(lat).toFixed(3)}° ${lat>=0?"с. ш.":"ю. ш."}, ${Math.abs(lon).toFixed(3)}° ${lon>=0?"в. д.":"з. д."}`;
+
+async function openPlace(lat, lon, meta={}){
+  lon = ((lon+540)%360)-180;
+  stopSpin();
+  document.body.classList.add("sheet-open");
+  const sheet=$("#sheet"); sheet.hidden=false; sheet.classList.remove("min"); document.body.classList.remove("sheet-min");
+  $("#hint").style.opacity=0;
+  if(pin) pin.remove();
+  const p=document.createElement("div"); p.className="pin"; pin=new maplibregl.Marker({element:p}).setLngLat([lon,lat]).addTo(map);
+  const mobile = innerWidth<760;
+  map.flyTo({center:[lon,lat], zoom:Math.max(map.getZoom(), meta.zoom ?? 4.2), duration:1600, essential:true,
+    padding: mobile ? {bottom: innerHeight*0.55, top:60, left:0, right:0} : {right:440, left:0, top:0, bottom:0}});
+  current = {lat, lon, name: meta.name || "…", sub: meta.sub || ""};
+  $("#placeName").textContent = current.name; $("#placeSub").textContent = current.sub; $("#placeCoords").textContent = fmtCoord(lat,lon);
+  updateStar();
+  $("#body").innerHTML = `<div class="loading">Загружаю погоду…</div>`;
+  const token = current;
+  const namePromise = meta.name ? Promise.resolve({name:meta.name, sub:meta.sub||""}) : reverseName(lat,lon);
+  namePromise.then(n => { if(current!==token) return; current.name=n.name; current.sub=n.sub; $("#placeName").textContent=n.name; $("#placeSub").textContent=n.sub; updateStar(); });
+  try{
+    const [wx, aq] = await Promise.all([fetchWeather(lat,lon), fetchAir(lat,lon).catch(()=>null)]);
+    if(current!==token) return;
+    current.wx = wx; current.aq = aq;
+    renderWeather();
+  }catch(e){
+    if(current!==token) return;
+    $("#body").innerHTML = `<div class="err">Не получилось загрузить погоду: сервис не ответил. Проверьте подключение к интернету.<br><button id="retry">Повторить</button></div>`;
+    $("#retry").onclick = () => openPlace(lat, lon, {name:current.name, sub:current.sub, zoom:map.getZoom()});
+  }
+}
+function fetchWeather(lat,lon){
+  const cur="temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,snow_depth,cape";
+  const hourly="temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,wind_direction_10m,cloud_cover,relative_humidity_2m,is_day";
+  const daily="weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,daylight_duration,uv_index_max,precipitation_sum,rain_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant";
+  return getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${cur}&hourly=${hourly}&daily=${daily}&timezone=auto&forecast_days=16&wind_speed_unit=ms`);
+}
+function fetchAir(lat,lon){
+  return getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi,us_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,carbon_monoxide,sulphur_dioxide,dust,alder_pollen,birch_pollen,grass_pollen,ragweed_pollen&timezone=auto`, 10000);
+}
+
+function renderWeather(){
+  const {wx, aq} = current, c = wx.current, d = wx.daily, h = wx.hourly;
+  const [desc] = WMO[c.weather_code] || ["—"];
+  const localNow = c.time;
+  const mmHg = Math.round(c.pressure_msl*0.750062);
+  const vis = c.visibility==null ? "—" : c.visibility>=10000 ? ">10 км" : (c.visibility/1000).toFixed(1)+" км";
+  const dayLen = d.daylight_duration?.[0] ? `${Math.floor(d.daylight_duration[0]/3600)} ч ${Math.round(d.daylight_duration[0]%3600/60)} мин` : "—";
+  const precipNow = (c.precipitation||0) > 0 ? `${c.precipitation} мм` : "нет";
+  const snowNow = c.snow_depth ? Math.round(c.snow_depth*100)+" см" : "нет";
+  const cape = c.cape==null ? "—" : c.cape<300 ? "низкий" : c.cape<1000 ? "умеренный" : c.cape<2500 ? "высокий" : "очень высокий";
+
+  let html = `
+  <div class="now">
+    ${icon(c.weather_code, c.is_day, 64)}
+    <div><div class="big">${Tu(c.temperature_2m)}</div><div class="localtime">Местное время ${fmtTime(localNow)} · ${esc(wx.timezone_abbreviation||"")}</div></div>
+    <div class="desc">${esc(desc)}</div>
+    <div class="feel">Ощущается как ${Tu(c.apparent_temperature)} · сегодня ${Tu(d.temperature_2m_min[0])} … ${Tu(d.temperature_2m_max[0])}</div>
+  </div>
+  <div class="section"><h4>Сейчас</h4><div class="grid">
+    ${cell("Ветер", `<span class="wind-arrow" style="transform:rotate(${c.wind_direction_10m+180}deg)">↑</span> ${c.wind_speed_10m.toFixed(1)} м/с`, `${dirName(c.wind_direction_10m)}, ${windWord(c.wind_speed_10m)}; порывы ${c.wind_gusts_10m.toFixed(0)} м/с`)}
+    ${cell("Влажность", `${c.relative_humidity_2m}%`, `точка росы ${Tu(c.dew_point_2m)}`)}
+    ${cell("Давление", `${mmHg} мм`, `${Math.round(c.pressure_msl)} гПа на уровне моря`)}
+    ${cell("Облачность", `${c.cloud_cover}%`, `видимость ${vis}`)}
+    ${cell("Осадки сейчас", precipNow, c.snowfall ? `снег ${c.snowfall} см/ч` : `снежный покров: ${snowNow}`)}
+    ${cell("УФ-индекс", c.uv_index==null?"—":c.uv_index.toFixed(1), c.uv_index==null?"":uvWord(c.uv_index)+`; макс. сегодня ${d.uv_index_max[0]?.toFixed(1)??"—"}`)}
+    ${cell("Восход / закат", `${fmtTime(d.sunrise[0])} / ${fmtTime(d.sunset[0])}`, `световой день ${dayLen}`)}
+    ${cell("Риск гроз", cape, `энергия неустойчивости ${Math.round(c.cape??0)} Дж/кг`)}
+  </div></div>`;
+
+  /* hourly: next 48h from local now */
+  const start = Math.max(0, h.time.findIndex(t => t >= localNow.slice(0,13)+":00"));
+  html += `<div class="section"><h4>Ближайшие 48 часов <span>температура и осадки</span></h4><div class="hourly">${hourlySVG(h, start, 48)}</div></div>`;
+
+  /* daily */
+  const lo = Math.min(...d.temperature_2m_min), hi = Math.max(...d.temperature_2m_max);
+  html += `<div class="section"><h4>Прогноз на ${d.time.length} дней <span>осадки, мм · вероятность</span></h4><div class="days">`;
+  d.time.forEach((t,i)=>{
+    const dt = new Date(t+"T12:00:00");
+    const name = i===0 ? "Сегодня" : i===1 ? "Завтра" : DOW[dt.getDay()];
+    const a = (d.temperature_2m_min[i]-lo)/(hi-lo||1)*100, b = (d.temperature_2m_max[i]-lo)/(hi-lo||1)*100;
+    const pr = d.precipitation_sum[i]||0, pp = d.precipitation_probability_max[i];
+    html += `<div class="day" title="${esc((WMO[d.weather_code[i]]||[""])[0])}; ветер до ${Math.round(d.wind_gusts_10m_max[i])} м/с">
+      <div class="dname">${name}<small>${dt.getDate()} ${MON[dt.getMonth()]}</small></div>
+      ${icon(d.weather_code[i],1,28)}
+      <div class="range"><span class="lo">${Tu(d.temperature_2m_min[i])}</span><span class="bar"><i style="left:${a}%;right:${100-b}%;background:linear-gradient(90deg,${tColor(d.temperature_2m_min[i])},${tColor(d.temperature_2m_max[i])})"></i></span><span class="hi">${Tu(d.temperature_2m_max[i])}</span></div>
+      <div class="pr">${pr>0 ? pr.toFixed(1) : "—"}<small>${pp==null?"":pp+"%"}</small></div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  /* air quality */
+  if(aq && aq.current){
+    const a = aq.current, e = a.european_aqi;
+    const [word,col] = e==null ? ["нет данных","#8fa0b8"] : e<=20?["отличное","#5fd39b"]:e<=40?["хорошее","#a8dd6b"]:e<=60?["умеренное","#ffd35c"]:e<=80?["плохое","#ff9d4a"]:e<=100?["очень плохое","#ff6a3d"]:["опасное","#c03a6b"];
+    const pollen = [["берёза",a.birch_pollen],["ольха",a.alder_pollen],["злаки",a.grass_pollen],["амброзия",a.ragweed_pollen]].filter(x=>x[1]!=null);
+    html += `<div class="section"><h4>Качество воздуха <span>европейский индекс ${e??"—"}</span></h4>
+      <div class="aqi"><span class="dot" style="background:${col}"></span><b>${word}</b></div>
+      <div class="grid">
+        ${cell("PM2.5", a.pm2_5==null?"—":a.pm2_5.toFixed(1), "мкг/м³, мелкие частицы")}
+        ${cell("PM10", a.pm10==null?"—":a.pm10.toFixed(0), "мкг/м³, пыль")}
+        ${cell("Озон", a.ozone==null?"—":Math.round(a.ozone), "мкг/м³")}
+        ${cell("Диоксид азота", a.nitrogen_dioxide==null?"—":a.nitrogen_dioxide.toFixed(1), "мкг/м³, выхлопы")}
+        ${cell("Угарный газ", a.carbon_monoxide==null?"—":Math.round(a.carbon_monoxide), "мкг/м³")}
+        ${cell("Пыль (Сахара и др.)", a.dust==null?"—":Math.round(a.dust), "мкг/м³")}
+      </div>
+      ${pollen.length ? `<div style="margin-top:8px;color:var(--muted);font-size:13px">Пыльца, зёрен/м³: ${pollen.map(p=>`${p[0]} ${Math.round(p[1])}`).join(" · ")}</div>`:""}
+    </div>`;
+  }
+  html += `<div class="section" style="color:var(--muted);font-size:12px">Модели: ECMWF, GFS, ICON и другие через Open-Meteo. Высота точки ${Math.round(wx.elevation)} м. Данные обновляются каждые 15 минут.</div>`;
+  $("#body").innerHTML = html;
+}
+const cell = (label, value, note="") => `<div class="cell"><small>${label}</small><b>${value}</b>${note?`<em>${note}</em>`:""}</div>`;
+
+function hourlySVG(h, start, n){
+  const W = 44, H = 170, top = 34, plotH = 70, barBase = 150;
+  const idx = [...Array(n).keys()].map(i=>start+i).filter(i=>i<h.time.length);
+  const temps = idx.map(i=>h.temperature_2m[i]);
+  const mn = Math.min(...temps), mx = Math.max(...temps), span = (mx-mn)||1;
+  const y = t => top + (1-(t-mn)/span)*plotH;
+  const width = idx.length*W;
+  const maxP = Math.max(2, ...idx.map(i=>h.precipitation[i]||0));
+  let pts = idx.map((i,k)=>`${k*W+W/2},${y(h.temperature_2m[i]).toFixed(1)}`).join(" ");
+  let s = `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" role="img" aria-label="Почасовой прогноз температуры и осадков">`;
+  s += `<defs><linearGradient id="tl" x1="0" x2="1" y1="0" y2="0">${idx.map((i,k)=>`<stop offset="${(k/(idx.length-1||1)).toFixed(3)}" stop-color="${tColor(h.temperature_2m[i])}"/>`).join("")}</linearGradient></defs>`;
+  idx.forEach((i,k)=>{
+    const x=k*W, t=h.time[i], hr=t.slice(11,13);
+    if(hr==="00") s += `<line x1="${x}" x2="${x}" y1="0" y2="${H}" stroke="rgba(150,180,220,.25)" stroke-dasharray="3 3"/><text x="${x+4}" y="10" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">${new Date(t).getDate()} ${MON[new Date(t).getMonth()]}</text>`;
+    const p = h.precipitation[i]||0, bh = p/maxP*30;
+    if(p>0) s += `<rect x="${x+12}" y="${barBase-bh}" width="${W-24}" height="${bh}" rx="2" fill="#4aa3ff" opacity=".85"/>`;
+    const pp = h.precipitation_probability[i];
+    s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="${pp>=50?"#4aa3ff":"#8fa0b8"}" font-size="10" font-family="JetBrains Mono,monospace">${pp==null?"":pp+"%"}</text>`;
+    s += `<text x="${x+W/2}" y="${barBase+24}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="JetBrains Mono,monospace">${hr}:00</text>`;
+    s += `<text x="${x+W/2}" y="${y(h.temperature_2m[i])-8}" text-anchor="middle" fill="#e8eef8" font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${T(h.temperature_2m[i])}°</text>`;
+  });
+  s += `<polyline points="${pts}" fill="none" stroke="url(#tl)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+  idx.forEach((i,k)=>{ s += `<circle cx="${k*W+W/2}" cy="${y(h.temperature_2m[i]).toFixed(1)}" r="2.5" fill="${tColor(h.temperature_2m[i])}"/>`; });
+  return s + `</svg>`;
+}
+
+/* ================= favourites ================= */
+let favs = store.get("favs", []);
+function renderFavs(){
+  const box=$("#favs"); box.innerHTML="";
+  favs.slice(0,8).forEach(f=>{
+    const b=document.createElement("button"); b.className="chip"; b.textContent=f.name;
+    b.onclick=()=>openPlace(f.lat,f.lon,{name:f.name,sub:f.sub,zoom:6}); box.appendChild(b);
+  });
+}
+const keyOf = p => p.lat.toFixed(2)+","+p.lon.toFixed(2);
+function updateStar(){ const s = !!current && favs.some(f=>keyOf(f)===keyOf(current)); $("#star").setAttribute("aria-pressed", s); $("#star").setAttribute("aria-label", s?"Убрать из избранного":"Добавить в избранное"); }
+$("#star").onclick = () => {
+  if(!current) return;
+  const k = keyOf(current);
+  if(favs.some(f=>keyOf(f)===k)){ favs = favs.filter(f=>keyOf(f)!==k); toast("Убрано из избранного"); }
+  else { favs.unshift({lat:current.lat, lon:current.lon, name:current.name, sub:current.sub}); toast("Добавлено в избранное"); }
+  store.set("favs",favs); renderFavs(); updateStar();
+};
+
+/* ================= search ================= */
+let sTimer=null, sIdx=-1, sItems=[];
+$("#q").addEventListener("input", e => {
+  clearTimeout(sTimer); const q=e.target.value.trim();
+  if(q.length<2){ hideResults(); return; }
+  sTimer=setTimeout(()=>search(q), 280);
+});
+async function search(q){
+  try{
+    const d = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=ru&format=json`, 10000);
+    sItems = d.results || [];
+    const r=$("#results"); r.innerHTML="";
+    if(!sItems.length){ r.innerHTML=`<button disabled>Ничего не найдено<small>Попробуйте другое написание</small></button>`; }
+    sItems.forEach((it,i)=>{
+      const b=document.createElement("button"); b.setAttribute("role","option");
+      b.innerHTML = `${esc(it.name)}<small>${esc([it.admin1, it.country].filter(Boolean).join(", "))}${it.population?` · ${(it.population/1e6>=1?(it.population/1e6).toFixed(1)+" млн":Math.round(it.population/1000)+" тыс.")} жителей`:""}</small>`;
+      b.onclick=()=>pick(i); r.appendChild(b);
+    });
+    r.hidden=false; $("#q").setAttribute("aria-expanded","true"); sIdx=-1;
+  }catch(e){ toast("Поиск не ответил. Попробуйте ещё раз."); }
+}
+function pick(i){
+  const it=sItems[i]; if(!it) return;
+  hideResults(); $("#q").value=it.name; $("#q").blur();
+  const z = it.feature_code?.startsWith("PCL") ? 3.5 : it.feature_code==="ADM1" ? 5 : 8;
+  openPlace(it.latitude, it.longitude, {name:it.name, sub:[it.admin1, it.country].filter(Boolean).join(", "), zoom:z});
+}
+function hideResults(){ $("#results").hidden=true; $("#q").setAttribute("aria-expanded","false"); }
+$("#q").addEventListener("keydown", e => {
+  const btns=[...$("#results").querySelectorAll("button:not([disabled])")];
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); if(!btns.length) return; sIdx=(sIdx+(e.key==="ArrowDown"?1:-1)+btns.length)%btns.length; btns.forEach((b,i)=>b.classList.toggle("active",i===sIdx)); }
+  if(e.key==="Enter"){ e.preventDefault(); pick(sIdx<0?0:sIdx); }
+  if(e.key==="Escape") hideResults();
+});
+document.addEventListener("click", e => { if(!e.target.closest(".search")) hideResults(); });
+
+/* ================= geolocation ================= */
+$("#locate").onclick = () => {
+  if(!navigator.geolocation){ toast("Браузер не умеет определять местоположение."); return; }
+  toast("Определяю местоположение…");
+  navigator.geolocation.getCurrentPosition(
+    p => openPlace(p.coords.latitude, p.coords.longitude, {zoom:8}),
+    () => toast("Нет доступа к местоположению. Разрешите его в настройках браузера или найдите город через поиск."),
+    {enableHighAccuracy:true, timeout:10000});
+};
+
+/* ================= globe controls ================= */
+let spinning = store.get("spin", true), userBusy=false;
+function spinStep(){
+  if(!spinning || userBusy || map.getZoom()>3) return;
+  const c = map.getCenter(); c.lng -= 6;
+  map.easeTo({center:c, duration:1000, easing:n=>n});
+}
+map.on("moveend", () => { if(spinning && !userBusy) spinStep(); });
+map.on("mousedown", ()=>{userBusy=true}); map.on("touchstart", ()=>{userBusy=true});
+map.on("mouseup", ()=>{userBusy=false}); map.on("touchend", ()=>{userBusy=false});
+function stopSpin(){ spinning=false; $("#spin").setAttribute("aria-pressed","false"); store.set("spin",false); }
+$("#spin").onclick = () => { spinning=!spinning; $("#spin").setAttribute("aria-pressed",spinning); store.set("spin",spinning); if(spinning) spinStep(); };
+$("#home").onclick = () => map.flyTo({zoom: innerWidth<760?0.9:1.6, pitch:0, bearing:0, duration:1500, padding:{top:0,bottom:0,left:0,right:0}});
+$("#units").textContent = "°"+units;
+$("#units").onclick = () => { units = units==="C"?"F":"C"; store.set("units",units); $("#units").textContent="°"+units; if(current?.wx) renderWeather(); if(on.temps) showTemps(); };
+
+$("#close").onclick = () => { $("#sheet").hidden=true; document.body.classList.remove("sheet-open","sheet-min"); if(pin){pin.remove();pin=null;} current=null; };
+$("#grab").onclick = () => { const s=$("#sheet"); s.classList.toggle("min"); document.body.classList.toggle("sheet-min", s.classList.contains("min")); };
+
+map.on("click", e => openPlace(e.lngLat.lat, e.lngLat.lng));
+map.on("moveend", () => { const c=map.getCenter(); store.set("center",[+c.lng.toFixed(2), +c.lat.toFixed(2)]); });
+
+map.on("load", () => {
+  buildMapLayers(); renderLayerUI(); renderFavs();
+  if(spinning) setTimeout(spinStep, 800);
+  setTimeout(()=>{ $("#hint").style.opacity=0; }, 9000);
+});
+if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+map.on("error", e => { /* tile errors are expected at satellite disc edges; ignore */ });
+</script>
+</body>
+</html>

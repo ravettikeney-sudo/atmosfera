@@ -964,7 +964,7 @@ function kpSummary(rows){
   const next24 = Math.max(...pts.filter(p=>p.ms<=now+24*3600e3).map(p=>p.k));
   const word = k => k<4?"спокойно":k<5?"неспокойно":k<6?"слабая буря":k<7?"умеренная буря":k<8?"сильная буря":"очень сильная буря";
   const later = Math.max(...pts.filter(p=>p.ms>now+24*3600e3).map(p=>p.k), 0);
-  return {word: word(next24)[0].toUpperCase()+word(next24).slice(1), note:`Kp ${next24.toFixed(0)} в ближайшие сутки; потом: ${word(later)}`};
+  return {word: word(next24)[0].toUpperCase()+word(next24).slice(1), note:`индекс Kp до ${next24.toFixed(1).replace(".",",")} в ближайшие сутки; потом: ${word(later)}`};
 }
 
 function hourlySVG(h, start, n, mode="temp"){
@@ -1539,6 +1539,8 @@ $("#grab").onclick = () => { const s=$("#sheet"); s.classList.toggle("min"); doc
 
 map.on("click", e => { if(wx.active) return; openPlace(e.lngLat.lat, e.lngLat.lng); });
 map.on("moveend", () => { const c=map.getCenter(); store.set("center",[+c.lng.toFixed(2), +c.lat.toFixed(2)]); });
+/* keep the tool column above the weather-map panel whatever its height */
+if(window.ResizeObserver) new ResizeObserver(() => { if(!$("#wxpanel").hidden) document.documentElement.style.setProperty("--wxh", $("#wxpanel").offsetHeight+"px"); }).observe($("#wxpanel"));
 /* Android back button (APK shell calls this): close the topmost panel; return true if something was closed */
 window.atmBack = () => {
   if(!$("#results").hidden){ hideResults(); return true; }

@@ -371,7 +371,7 @@ async function getJSON(url, ms=15000, tries=3){
       return await r.json();
     }catch(e){
       if(a>=tries || e.retry===false) throw e;
-      await new Promise(res=>setTimeout(res, 700*a));
+      await new Promise(res=>setTimeout(res, (e.message==="HTTP 429" ? 3000 : 700)*a));
     }finally{ clearTimeout(id); }
   }
 }
@@ -1019,7 +1019,7 @@ function hourlySVG(h, start, n, mode="temp"){
 }
 
 /* ================= «Погода на карте»: animated precipitation & cloud forecast ================= */
-const N = 17, HOURS = 12, CW = 256, EDGE = 40;
+const N = 13, HOURS = 12, CW = 256, EDGE = 40;
 const wx = Object.assign({active:false, data:null, t:0, timer:null, canvas:null, ctx:null, img:null, center:null, extent:null, clouds:true, precip:true, wind:false, press:false, temp:false, radar:false, loading:false, offset:0}, store.get("wxLayers", {}));
 /* tileable value noise for cloud/rain texture */
 const NOISE = (()=>{
@@ -1044,7 +1044,13 @@ function wxExtent(lat, lon){
   const n = clamp(lat+dLat, -84, 84), s = clamp(lat-dLat, -84, 84);
   return {n, s, w: lon-dLon, e: lon+dLon};
 }
+const wxCache = new Map();
 async function loadWxGrid(lat, lon){
+  const ck = (Math.round(lat*2)/2)+","+(Math.round(lon*2)/2), hit = wxCache.get(ck);
+  if(hit && Date.now()-hit.at < 15*60*1000){ const D = hit.D; D.offset = clamp((Date.now()-D.first)/3600000, 0, 1.5); return D; }
+  const D = await loadWxGridFresh(lat, lon); wxCache.set(ck, {at:Date.now(), D}); return D;
+}
+async function loadWxGridFresh(lat, lon){
   const ext = wxExtent(lat, lon), yN = mercY(ext.n), yS = mercY(ext.s);
   const lats=[], lons=[];
   for(let j=0;j<N;j++){ const la = invMercY(yN + (yS-yN)*j/(N-1)); for(let i=0;i<N;i++){ lats.push(la.toFixed(3)); lons.push((((ext.w + (ext.e-ext.w)*i/(N-1))+540)%360-180).toFixed(3)); } }
@@ -1180,7 +1186,7 @@ async function loadWxFor(lat, lon){
     if(wx.radar) showWxRadar(true);
     wxPlay(true);
   }catch(e){
-    $("#wxText").textContent = "Не удалось загрузить карту осадков. Проверьте интернет и нажмите «Показать осадки для этой области».";
+    $("#wxText").textContent = e.message==="HTTP 429" ? "Сервис погоды сейчас перегружен. Подождите минуту и нажмите «Показать осадки для этой области»." : "Не удалось загрузить карту осадков. Проверьте интернет и нажмите «Показать осадки для этой области».";
     $("#wxRefresh").hidden = false;
   }finally{ wx.loading = false; }
 }

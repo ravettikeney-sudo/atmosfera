@@ -1539,6 +1539,15 @@ $("#grab").onclick = () => { const s=$("#sheet"); s.classList.toggle("min"); doc
 
 map.on("click", e => { if(wx.active) return; openPlace(e.lngLat.lat, e.lngLat.lng); });
 map.on("moveend", () => { const c=map.getCenter(); store.set("center",[+c.lng.toFixed(2), +c.lat.toFixed(2)]); });
+/* Android back button (APK shell calls this): close the topmost panel; return true if something was closed */
+window.atmBack = () => {
+  if(!$("#results").hidden){ hideResults(); return true; }
+  if(!$("#cities").hidden){ closeCities(); return true; }
+  if(!$("#layers").hidden){ $("#layers").hidden = true; $("#layersBtn").setAttribute("aria-expanded","false"); return true; }
+  if(wx.active){ closeWx(false); return true; }
+  if(!$("#sheet").hidden){ $("#close").click(); return true; }
+  return false;
+};
 addEventListener("keydown", e => { if(e.key==="Escape"){ if(wx.active) closeWx(false); else if(!$("#sheet").hidden) $("#close").click(); } });
 
 map.on("load", () => {

@@ -169,13 +169,53 @@ body.sheet-open .toolbar{right:calc(444px + env(safe-area-inset-right,0px))}
 .tg[aria-pressed="false"]{color:var(--muted)}
 .refresh{align-self:center;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--ice);background:rgba(124,196,255,.15)}
 .wx-status{font-size:13px;color:var(--muted)}
-body.wxmode .dock, body.wxmode .favs{display:none}
+body.wxmode .dock{display:none}
 body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--wxh,220px))}
 
 .temp-marker{font:600 12px var(--mono);padding:3px 7px;border-radius:999px;color:#05070d;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer;white-space:nowrap;border:1px solid rgba(0,0,0,.25)}
 .pin{width:22px;height:22px;border-radius:50%;background:var(--sun);border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,179,92,.3),0 4px 10px rgba(0,0,0,.5)}
 .hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(34px + env(safe-area-inset-bottom,0px));z-index:3;border-radius:999px;padding:8px 16px;font-size:13px;color:var(--muted);pointer-events:none;transition:opacity .4s;white-space:nowrap;max-width:calc(100vw - 140px);overflow:hidden;text-overflow:ellipsis}
 .toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9;background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);width:max-content;max-width:calc(100vw - 32px)}
+
+/* alerts, tabs, day details, extras, my cities */
+.alerts{display:flex;flex-direction:column;gap:6px;margin:8px 0 2px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid;font-size:13px;line-height:1.35}
+.alert b{display:block;font-size:14px;margin-bottom:1px}
+.alert .dot{width:9px;height:9px;border-radius:50%;background:currentColor;margin-top:5px;flex:none}
+.alert.l1{background:rgba(255,211,92,.09);border-color:rgba(255,211,92,.38);color:#ffe3a0}
+.alert.l2{background:rgba(255,122,89,.11);border-color:rgba(255,122,89,.45);color:#ffc5b6}
+.alert.l3{background:rgba(224,48,106,.14);border-color:rgba(224,48,106,.55);color:#ffb1c8}
+.tabs{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--raise);border:1px solid var(--line);margin-bottom:10px}
+.tabs button{flex:1;padding:7px 4px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:13px;font-weight:500;min-width:0}
+.tabs button[aria-selected="true"]{background:rgba(124,196,255,.18);color:var(--fg)}
+.day{cursor:pointer;border-radius:8px}
+.day:hover{background:rgba(124,196,255,.05)}
+.day .rc{min-width:0}
+.day .wnd{display:block;font:11px var(--mono);color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dayx{overflow-x:auto;padding:4px 0 10px;border-bottom:1px solid var(--line)}
+.dayx table{border-collapse:collapse;font:12px var(--mono);width:100%;min-width:330px;font-variant-numeric:tabular-nums}
+.dayx td,.dayx th{padding:5px 4px;text-align:right;white-space:nowrap}
+.dayx tr+tr td{border-top:1px solid var(--line)}
+.dayx th{color:var(--muted);font:500 11px var(--body)}
+.dayx td:first-child,.dayx th:first-child{text-align:left}
+.dayx td:nth-child(2){text-align:center}
+.dayx .wx-ico{vertical-align:middle}
+.cities{position:absolute;top:54px;left:0;right:0;border-radius:16px;padding:8px;max-height:min(62vh,500px);overflow:auto}
+.cities h3{margin:6px 8px 8px;font:600 11px var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;justify-content:space-between}
+.crow{display:flex;align-items:center;gap:6px;padding:6px;border-radius:12px}
+.crow:hover{background:rgba(124,196,255,.07)}
+.crow .open{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:2px}
+.crow .nm{flex:1;min-width:0}
+.crow .nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .nm small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .tt{font:600 18px var(--mono);font-variant-numeric:tabular-nums}
+.mini{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:none;display:grid;place-items:center;color:var(--muted);padding:0;flex:none}
+.mini:hover{color:var(--fg);border-color:var(--ice)}
+.home-badge{font:600 10px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--sun);margin-left:6px;vertical-align:2px}
+.empty{padding:12px 10px 14px;color:var(--muted);font-size:14px;line-height:1.4}
+.addcur{width:100%;margin-top:6px;padding:10px;border-radius:12px;border:1px dashed var(--ice);background:rgba(124,196,255,.08);font-weight:600}
+.qbtn.saved{border-color:rgba(255,179,92,.6);color:var(--sun)}
+#wxIso,#wxWind{position:fixed;inset:0;pointer-events:none;z-index:1}
 
 @media (max-width:760px){
   .brand span{display:none}
@@ -197,6 +237,8 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
 </head>
 <body>
 <div id="map" role="application" aria-label="Интерактивный глобус"></div>
+<canvas id="wxIso" hidden></canvas>
+<canvas id="wxWind" hidden></canvas>
 
 <div class="top">
   <div class="brand glass" aria-label="Атмосфера">
@@ -211,8 +253,11 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
       </button>
       <div class="results" id="results" role="listbox" hidden></div>
     </div>
-    <div class="favs" id="favs"></div>
   </div>
+  <button class="icon-btn glass" id="citiesBtn" aria-expanded="false" aria-controls="cities" title="Мои города" aria-label="Мои города">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>
+  </button>
+  <div class="cities glass" id="cities" hidden></div>
 </div>
 
 <div class="dock">
@@ -289,12 +334,18 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
   <div class="wx-toggles">
     <button class="tg" id="tgClouds" aria-pressed="true">Облака</button>
     <button class="tg" id="tgPrecip" aria-pressed="true">Дождь и снег</button>
+    <button class="tg" id="tgWind" aria-pressed="false">Ветер</button>
+    <button class="tg" id="tgPress" aria-pressed="false">Давление</button>
+    <button class="tg" id="tgTemp" aria-pressed="false">Температура</button>
     <button class="tg" id="tgRadar" aria-pressed="false">Радар (факт)</button>
   </div>
   <div class="wx-legend">
     <span><i style="background:linear-gradient(90deg,#9fd8ff,#3d9bff,#1f4fd0,#8a3fe0)"></i>дождь: слабый → ливень</span>
     <span><i style="background:linear-gradient(90deg,#f4f2ff,#c9bdff)"></i>снег</span>
     <span><i style="background:linear-gradient(90deg,rgba(255,255,255,.2),rgba(255,255,255,.75))"></i>облака</span>
+    <span id="lgWind" hidden><i style="background:linear-gradient(90deg,#e8eef8,#b8ecff,#ffe28c,#ff8c6e)"></i>ветер: слабый → сильный</span>
+    <span id="lgPress" hidden><i style="background:linear-gradient(90deg,#fff 0 2px,transparent 2px 6px,#fff 6px 8px,transparent 8px)"></i>изобары, гПа · <b style="color:#7cc4ff">В</b> высокое, <b style="color:#ff8a7a">Н</b> низкое</span>
+    <span id="lgTemp" hidden><i id="lgTempBar"></i>температура −30…+40°</span>
   </div>
   <button class="refresh" id="wxRefresh" hidden>Показать осадки для этой области</button>
 </section>
@@ -603,9 +654,9 @@ async function openPlace(lat, lon, meta={}){
   const namePromise = meta.name ? Promise.resolve({name:meta.name, sub:meta.sub||""}) : reverseName(lat,lon);
   namePromise.then(n => { if(current!==token) return; current.name=n.name; current.sub=n.sub; $("#placeName").textContent=n.name; $("#placeSub").textContent=n.sub; updateStar(); });
   try{
-    const [w, aq] = await Promise.all([fetchWeather(lat,lon), fetchAir(lat,lon).catch(()=>null)]);
+    const [w, aq, ex] = await Promise.all([fetchWeather(lat,lon), fetchAir(lat,lon).catch(()=>null), fetchExtras(lat,lon).catch(()=>({}))]);
     if(current!==token) return;
-    current.wx = w; current.aq = aq;
+    current.wx = w; current.aq = aq; current.ex = ex;
     renderWeather();
     sound.update();
   }catch(e){
@@ -616,9 +667,17 @@ async function openPlace(lat, lon, meta={}){
 }
 function fetchWeather(lat,lon){
   const cur="temperature_2m,relative_humidity_2m,apparent_temperature,dew_point_2m,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,uv_index,snow_depth,cape";
-  const hourly="temperature_2m,apparent_temperature,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_gusts_10m,cloud_cover,is_day";
+  const hourly="temperature_2m,apparent_temperature,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,cloud_cover,is_day";
   const daily="weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,daylight_duration,uv_index_max,precipitation_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant";
   return getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${cur}&hourly=${hourly}&daily=${daily}&minutely_15=precipitation,snowfall&forecast_minutely_15=32&past_minutely_15=1&timezone=auto&forecast_days=16&wind_speed_unit=ms`);
+}
+async function fetchExtras(lat,lon){
+  const [y, m, kp] = await Promise.allSettled([
+    getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&past_days=1&forecast_days=1&timezone=auto`, 10000, 2),
+    getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=sea_surface_temperature,wave_height&timezone=auto`, 8000, 1),
+    getKp()
+  ]);
+  return {yday: y.value||null, marine: m.value||null, kp: kp.value||null};
 }
 function fetchAir(lat,lon){
   return getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,carbon_monoxide,dust,alder_pollen,birch_pollen,grass_pollen,ragweed_pollen&timezone=auto`, 10000, 2);
@@ -654,8 +713,10 @@ function nowcast(w){
   return {text, bars, start: Tm[0]};
 }
 
+let hourMode = store.get("hourMode","temp");
+const openDays = new Set();
 function renderWeather(){
-  const {wx: w, aq} = current, c = w.current, d = w.daily, h = w.hourly;
+  const {wx: w, aq, ex} = current, c = w.current, d = w.daily, h = w.hourly;
   const [desc] = WMO[c.weather_code] || ["—"];
   const mmHg = Math.round(c.pressure_msl*0.750062);
   const visS = c.visibility==null ? "—" : c.visibility>=10000 ? ">10 км" : (c.visibility/1000).toFixed(1)+" км";
@@ -663,29 +724,34 @@ function renderWeather(){
   const precipNow = (c.precipitation||0) > 0 ? `${c.precipitation} мм` : "нет";
   const snowNow = c.snow_depth ? Math.round(c.snow_depth*100)+" см" : "нет";
   const cape = c.cape==null ? "—" : c.cape<300 ? "низкий" : c.cape<1000 ? "умеренный" : c.cape<2500 ? "высокий" : "очень высокий";
-  const nc = nowcast(w);
+  const nc = nowcast(w), al = alerts(w), saved = isSaved();
   const maxBar = Math.max(1, ...nc.bars.map(b=>b.p));
   const barsHtml = nc.bars.map(b => `<i style="height:${b.p<0.02?2:clamp(b.p/maxBar*34,4,34)}px;${b.p>=0.02?`background:${b.snow?"var(--snow)":"var(--rain)"}`:""}"></i>`).join("");
+  const yd = yesterdayText(w, ex);
+  const ptrend = pressureTrend(w);
 
   let html = `
   <div class="now">
     ${icon(c.weather_code, c.is_day, 64)}
     <div><div class="big">${Tu(c.temperature_2m)}</div><div class="localtime">Местное время ${fmtTime(c.time)} · ${esc(w.timezone_abbreviation||"")}</div></div>
     <div class="desc">${esc(desc)}</div>
-    <div class="feel">Ощущается как ${Tu(c.apparent_temperature)} · сегодня ${Tu(d.temperature_2m_min[0])} … ${Tu(d.temperature_2m_max[0])}</div>
+    <div class="feel">Ощущается как ${Tu(c.apparent_temperature)} · сегодня ${Tu(d.temperature_2m_min[0])} … ${Tu(d.temperature_2m_max[0])}${yd?`<br>${esc(yd)}`:""}</div>
   </div>
   ${nc.text ? `<div class="nowcast"><b>${esc(nc.text)}</b>${nc.bars.length?`<div class="ncbars" aria-hidden="true">${barsHtml}</div><div class="ncaxis"><span>сейчас</span><span>+2 ч</span><span>+4 ч</span><span>+6 ч</span></div>`:""}</div>` : ""}
+  ${al.length ? `<div class="alerts" role="list" aria-label="Предупреждения">${al.map(a=>`<div class="alert l${a.level}" role="listitem"><span class="dot"></span><div><b>${esc(a.title)}</b>${esc(a.text)}</div></div>`).join("")}</div>` : ""}
   <div class="quick">
     <button class="qbtn primary" id="qMap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 1.5A3.5 3.5 0 0 0 7 15z"/><path d="M8 19l-1 2M12 19l-1 2M16 19l-1 2"/></svg>Погода на карте</button>
+    <button class="qbtn${saved?" saved":""}" id="qSave">${saved?"★ В моих городах":"☆ Сохранить город"}</button>
     <button class="qbtn" id="qTomorrow">Погода завтра</button>
     <button class="qbtn" id="qCar">Когда мыть машину?</button>
     <button class="qbtn" id="qWear">Как одеться?</button>
+    <button class="qbtn" id="qShare">Поделиться</button>
   </div>
   <div class="answer" id="answer" hidden></div>
   <div class="section"><h4>Сейчас</h4><div class="grid">
     ${cell("Ветер", `<span class="wind-arrow" style="transform:rotate(${c.wind_direction_10m+180}deg)">↑</span> ${c.wind_speed_10m.toFixed(1)} м/с`, `${dirName(c.wind_direction_10m)}, ${windWord(c.wind_speed_10m)}; порывы до ${c.wind_gusts_10m.toFixed(0)} м/с`)}
+    ${cell("Давление", `${mmHg} мм рт. ст.`, `${Math.round(c.pressure_msl)} гПа; ${ptrend}`)}
     ${cell("Влажность", `${c.relative_humidity_2m}%`, `точка росы ${Tu(c.dew_point_2m)}`)}
-    ${cell("Давление", `${mmHg} мм`, `${Math.round(c.pressure_msl)} гПа на уровне моря`)}
     ${cell("Облачность", `${c.cloud_cover}%`, `видимость ${visS}`)}
     ${cell("Осадки сейчас", precipNow, c.snowfall ? `снег ${c.snowfall} см/ч` : `снежный покров: ${snowNow}`)}
     ${cell("УФ-индекс", c.uv_index==null?"—":c.uv_index.toFixed(1), c.uv_index==null?"":uvWord(c.uv_index)+`; макс. сегодня ${d.uv_index_max[0]?.toFixed(1)??"—"}`)}
@@ -694,23 +760,39 @@ function renderWeather(){
   </div></div>`;
 
   const start = Math.max(0, h.time.findIndex(t => t >= c.time.slice(0,13)+":00"));
-  html += `<div class="section"><h4>Ближайшие 48 часов <span>температура и осадки</span></h4><div class="hourly">${hourlySVG(h, start, 48)}</div></div>`;
+  const tabs = [["temp","Температура"],["precip","Осадки"],["wind","Ветер"],["press","Давление"]];
+  html += `<div class="section"><h4>Ближайшие 48 часов</h4>
+    <div class="tabs" role="tablist" aria-label="Что показать на графике">${tabs.map(([k,n])=>`<button role="tab" data-mode="${k}" aria-selected="${hourMode===k}">${n}</button>`).join("")}</div>
+    <div class="hourly" id="hourly">${hourlySVG(h, start, 48, hourMode)}</div></div>`;
 
   const lo = Math.min(...d.temperature_2m_min), hi = Math.max(...d.temperature_2m_max);
-  html += `<div class="section"><h4>Прогноз на ${d.time.length} дней <span>осадки, мм · вероятность</span></h4><div class="days">`;
+  html += `<div class="section"><h4>Прогноз на ${d.time.length} дней <span>нажмите на день — подробно</span></h4><div class="days">`;
   d.time.forEach((t,i)=>{
     const dt = new Date(t+"T12:00:00");
     const name = i===0 ? "Сегодня" : i===1 ? "Завтра" : DOW[dt.getDay()];
     const a = (d.temperature_2m_min[i]-lo)/(hi-lo||1)*100, b = (d.temperature_2m_max[i]-lo)/(hi-lo||1)*100;
     const pr = d.precipitation_sum[i]||0, pp = d.precipitation_probability_max[i];
-    html += `<div class="day" id="day-${i}" title="${esc((WMO[d.weather_code[i]]||[""])[0])}; ветер до ${Math.round(d.wind_gusts_10m_max[i])} м/с">
+    const open = openDays.has(i);
+    html += `<div class="day" role="button" tabindex="0" data-i="${i}" aria-expanded="${open}" title="${esc((WMO[d.weather_code[i]]||[""])[0])}">
       <div class="dname">${name}<small>${dt.getDate()} ${MON[dt.getMonth()]}</small></div>
       ${icon(d.weather_code[i],1,28)}
-      <div class="range"><span class="lo">${Tu(d.temperature_2m_min[i])}</span><span class="bar"><i style="left:${a}%;right:${100-b}%;background:linear-gradient(90deg,${tColor(d.temperature_2m_min[i])},${tColor(d.temperature_2m_max[i])})"></i></span><span class="hi">${Tu(d.temperature_2m_max[i])}</span></div>
+      <div class="rc"><div class="range"><span class="lo">${Tu(d.temperature_2m_min[i])}</span><span class="bar"><i style="left:${a}%;right:${100-b}%;background:linear-gradient(90deg,${tColor(d.temperature_2m_min[i])},${tColor(d.temperature_2m_max[i])})"></i></span><span class="hi">${Tu(d.temperature_2m_max[i])}</span></div>
+      <span class="wnd">ветер ${dirName(d.wind_direction_10m_dominant[i])} ${Math.round(d.wind_speed_10m_max[i])} м/с, порывы ${Math.round(d.wind_gusts_10m_max[i])}</span></div>
       <div class="pr">${pr>0 ? pr.toFixed(1) : "—"}<small>${pp==null?"":pp+"%"}</small></div>
-    </div>`;
+    </div><div class="dayx" id="dx-${i}" ${open?"":"hidden"}>${open?dayDetail(w,i):""}</div>`;
   });
   html += `</div></div>`;
+
+  /* more: moon, geomagnetic, water */
+  const mo = moon(new Date());
+  const kp = kpSummary(ex?.kp);
+  const sst = ex?.marine?.current?.sea_surface_temperature;
+  html += `<div class="section"><h4>Ещё</h4><div class="grid">
+    ${cell("Луна", mo.name, `освещена на ${mo.illum}%; ${mo.daysToFull<1?"полнолуние сегодня":`до полнолуния ${Math.round(mo.daysToFull)} дн.`}`)}
+    ${kp ? cell("Магнитные бури", kp.word, kp.note) : cell("Магнитные бури","—","данные NOAA сейчас недоступны")}
+    ${sst!=null ? cell("Температура воды", Tu(sst), ex.marine.current.wave_height!=null ? `волны ${ex.marine.current.wave_height.toFixed(1)} м` : "") : ""}
+    ${cell("Высота над морем", `${Math.round(w.elevation)} м`, `часовой пояс ${esc(w.timezone)}`)}
+  </div></div>`;
 
   if(aq && aq.current){
     const a = aq.current, e = a.european_aqi;
@@ -730,24 +812,51 @@ function renderWeather(){
       ${pollen.length ? `<div style="margin-top:8px;color:var(--muted);font-size:13px">Пыльца, зёрен/м³: ${pollen.map(p=>`${p[0]} ${Math.round(p[1])}`).join(" · ")}</div>`:""}
     </div>`;
   }
-  html += `<div class="section" style="color:var(--muted);font-size:12px">Прогноз: модели ECMWF, GFS, ICON и другие через Open-Meteo. Высота точки ${Math.round(w.elevation)} м.</div>`;
+  html += `<div class="section" style="color:var(--muted);font-size:12px">Прогноз: модели ECMWF, GFS, ICON и другие через Open-Meteo. Предупреждения рассчитаны по прогнозу и не заменяют официальные.</div>`;
   $("#body").innerHTML = html;
 
   $("#qMap").onclick = () => openWx();
+  $("#qSave").onclick = () => toggleSave();
   $("#qTomorrow").onclick = () => answer(tomorrowText(w));
   $("#qCar").onclick = () => answer(carWashText(w));
   $("#qWear").onclick = () => answer(wearText(w));
+  $("#qShare").onclick = () => shareForecast(w);
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+    hourMode = b.dataset.mode; store.set("hourMode", hourMode);
+    document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x===b));
+    $("#hourly").innerHTML = hourlySVG(h, start, 48, hourMode);
+  });
+  document.querySelectorAll(".day").forEach(el => {
+    const tog = () => {
+      const i = +el.dataset.i, box = $("#dx-"+i), open = box.hidden;
+      box.hidden = !open; el.setAttribute("aria-expanded", open);
+      if(open){ openDays.add(i); box.innerHTML = dayDetail(w, i); } else openDays.delete(i);
+    };
+    el.onclick = tog;
+    el.onkeydown = e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tog(); } };
+  });
 }
 const cell = (label, value, note="") => `<div class="cell"><small>${label}</small><b>${value}</b>${note?`<em>${note}</em>`:""}</div>`;
 function answer([title, text]){
   const a = $("#answer"); a.hidden=false; a.innerHTML = `<b>${esc(title)}</b>${esc(text)}`;
   a.scrollIntoView({block:"nearest", behavior:"smooth"});
 }
+function dayDetail(w, i){
+  const h = w.hourly, day = w.daily.time[i];
+  const rows = [];
+  for(let k=0;k<h.time.length;k++){
+    const t = h.time[k]; if(t.slice(0,10)!==day) continue;
+    const hr = +t.slice(11,13); if(hr%3) continue;
+    rows.push(`<tr><td>${t.slice(11,16)}</td><td>${icon(h.weather_code[k], h.is_day[k], 22)}</td><td>${Tu(h.temperature_2m[k])}</td><td>${(h.precipitation[k]||0)>0?h.precipitation[k].toFixed(1):"—"}</td><td>${dirName(h.wind_direction_10m[k])} ${Math.round(h.wind_speed_10m[k])}<span style="color:var(--muted)">/${Math.round(h.wind_gusts_10m[k])}</span></td><td>${Math.round(h.pressure_msl[k]*0.750062)}</td></tr>`);
+  }
+  if(!rows.length) return `<div class="empty">Нет почасовых данных для этого дня.</div>`;
+  return `<table><thead><tr><th>Время</th><th></th><th>°</th><th>Осадки, мм</th><th>Ветер, м/с</th><th>Давл., мм</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
 function tomorrowText(w){
   const d = w.daily, i = 1;
   const pr = d.precipitation_sum[i]||0, sn = d.snowfall_sum[i]||0;
   const precip = pr<0.2 ? "без осадков" : sn>0.5 ? `снег, около ${sn.toFixed(0)} см` : `дождь, ${pr.toFixed(1)} мм (вероятность ${d.precipitation_probability_max[i]}%)`;
-  return ["Завтра", `${(WMO[d.weather_code[i]]||["—"])[0]}. Днём до ${Tu(d.temperature_2m_max[i])}, ночью ${Tu(d.temperature_2m_min[i])}; ${precip}; ветер до ${Math.round(d.wind_speed_10m_max[i])} м/с, порывы до ${Math.round(d.wind_gusts_10m_max[i])} м/с.`];
+  return ["Завтра", `${(WMO[d.weather_code[i]]||["—"])[0]}. Днём до ${Tu(d.temperature_2m_max[i])}, ночью ${Tu(d.temperature_2m_min[i])}; ${precip}; ветер ${dirName(d.wind_direction_10m_dominant[i])} до ${Math.round(d.wind_speed_10m_max[i])} м/с, порывы до ${Math.round(d.wind_gusts_10m_max[i])} м/с.`];
 }
 function carWashText(w){
   const d = w.daily, dry = i => (d.precipitation_sum[i]||0) < 0.5 && (d.precipitation_probability_max[i]??0) < 40;
@@ -767,36 +876,151 @@ function wearText(w){
   if((w.current.uv_index??0)>=6) s += "; нужен солнцезащитный крем";
   return ["Как одеться", `Ощущается как ${Tu(t)}. ${s}.`];
 }
+async function shareForecast(w){
+  const c = w.current, d = w.daily;
+  const text = `${current.name}: сейчас ${Tu(c.temperature_2m)}, ${(WMO[c.weather_code]||["—"])[0].toLowerCase()}, ветер ${c.wind_speed_10m.toFixed(0)} м/с. ${nowcast(w).text}. Завтра ${Tu(d.temperature_2m_min[1])}…${Tu(d.temperature_2m_max[1])}, ${(WMO[d.weather_code[1]]||["—"])[0].toLowerCase()}.`;
+  const url = location.href.split("#")[0];
+  try{
+    if(navigator.share){ await navigator.share({title:"Погода — Атмосфера", text, url}); return; }
+  }catch(e){ if(e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(text+" "+url); toast("Прогноз скопирован — вставьте его в любой мессенджер"); }
+  catch(e){ answer(["Скопируйте текст", text+" "+url]); }
+}
 
-function hourlySVG(h, start, n){
-  const W = 44, H = 170, top = 34, plotH = 70, barBase = 150;
+/* ---- yesterday, pressure trend ---- */
+function yesterdayText(w, ex){
+  const y = ex?.yday?.hourly; if(!y) return "";
+  const now = w.current.time, dt = new Date(now.slice(0,10)+"T12:00:00Z"); dt.setUTCDate(dt.getUTCDate()-1);
+  const key = dt.toISOString().slice(0,10)+"T"+now.slice(11,13)+":00";
+  const k = y.time.indexOf(key); if(k<0 || y.temperature_2m[k]==null) return "";
+  const diff = Math.round(w.current.temperature_2m - y.temperature_2m[k]);
+  if(Math.abs(diff)<1) return "Так же, как вчера в это время";
+  return `${diff>0?"Теплее":"Холоднее"}, чем вчера в это время, на ${Math.abs(units==="F"?Math.round(diff*9/5):diff)}°`;
+}
+function pressureTrend(w){
+  const h = w.hourly, i = Math.max(0, h.time.findIndex(t => t >= w.current.time.slice(0,13)+":00"));
+  const a = h.pressure_msl[i], b = h.pressure_msl[Math.min(h.time.length-1, i+6)];
+  if(a==null||b==null) return "";
+  const d = (b-a)*0.750062;
+  return Math.abs(d)<0.8 ? "без изменений" : d>0 ? `растёт (+${d.toFixed(0)} мм за 6 ч)` : `падает (${d.toFixed(0)} мм за 6 ч)`;
+}
+
+/* ---- weather warnings derived from the forecast (not official) ---- */
+function alerts(w){
+  const h = w.hourly, d = w.daily, now = w.current.time;
+  const i0 = Math.max(0, h.time.findIndex(t => t >= now.slice(0,13)+":00")), i1 = Math.min(h.time.length, i0+48);
+  const today = now.slice(0,10);
+  const when = i => { const t = h.time[i], dd = Math.round((Date.parse(t.slice(0,10)) - Date.parse(today))/864e5);
+    return `${dd===0?"сегодня":dd===1?"завтра":"послезавтра"} около ${t.slice(11,13)}:00`; };
+  const out = [];
+  let g=-1, gi=i0; for(let i=i0;i<i1;i++) if((h.wind_gusts_10m[i]||0)>g){ g=h.wind_gusts_10m[i]; gi=i; }
+  if(g>=25) out.push({level:3,title:"Штормовой ветер",text:`Порывы до ${Math.round(g)} м/с ${when(gi)}. Держитесь подальше от деревьев и рекламных щитов.`});
+  else if(g>=20) out.push({level:2,title:"Очень сильный ветер",text:`Порывы до ${Math.round(g)} м/с ${when(gi)}.`});
+  else if(g>=15) out.push({level:1,title:"Сильный ветер",text:`Порывы до ${Math.round(g)} м/с ${when(gi)}.`});
+  const ti = (()=>{ for(let i=i0;i<i1;i++) if(h.weather_code[i]>=95) return i; return -1; })();
+  if(ti>=0) out.push({level: h.weather_code[ti]>=96?3:2, title: h.weather_code[ti]>=96?"Гроза с градом":"Гроза", text:`Ожидается ${when(ti)}.`});
+  let pm=0, pi=i0; for(let i=i0;i<i1;i++) if((h.precipitation[i]||0)>pm){ pm=h.precipitation[i]; pi=i; }
+  if(pm>=8) out.push({level:2,title:"Ливень",text:`До ${pm.toFixed(0)} мм за час ${when(pi)}.`});
+  else if((d.precipitation_sum[0]||0)>=25 || (d.precipitation_sum[1]||0)>=25) out.push({level:2,title:"Сильный дождь",text:`До ${Math.round(Math.max(d.precipitation_sum[0]||0,d.precipitation_sum[1]||0))} мм за сутки.`});
+  let sn=0; for(let i=i0;i<Math.min(i1,i0+24);i++) sn += h.snowfall[i]||0;
+  if(sn>=6) out.push({level:2,title:"Сильный снегопад",text:`До ${Math.round(sn)} см снега за сутки.`});
+  else if(sn>=2) out.push({level:1,title:"Снегопад",text:`Около ${Math.round(sn)} см снега за сутки.`});
+  const fz = (()=>{ for(let i=i0;i<i1;i++) if([56,57,66,67].includes(h.weather_code[i])) return i; return -1; })();
+  if(fz>=0) out.push({level:2,title:"Гололёд",text:`Ледяной дождь или морось ${when(fz)}.`});
+  else { for(let i=i0+1;i<i1;i++){ if(h.temperature_2m[i]<=0 && h.temperature_2m[i-1]>0){ let wet=0; for(let k=Math.max(i0,i-6);k<i;k++) wet+=h.precipitation[k]||0; if(wet>=0.3){ out.push({level:1,title:"Гололедица",text:`После осадков температура опустится ниже нуля ${when(i)}.`}); break; } } } }
+  let tmin=99, tmi=i0, tmax=-99, txi=i0; for(let i=i0;i<i1;i++){ const t=h.temperature_2m[i]; if(t<tmin){tmin=t;tmi=i;} if(t>tmax){tmax=t;txi=i;} }
+  if(tmin<0 && w.current.temperature_2m>2) out.push({level:1,title:"Заморозки",text:`До ${Tu(tmin)} ${when(tmi)}. Укройте растения.`});
+  if(tmin<=-25) out.push({level:2,title:"Сильный мороз",text:`До ${Tu(tmin)} ${when(tmi)}.`});
+  if(tmax>=35) out.push({level:2,title:"Сильная жара",text:`До ${Tu(tmax)} ${when(txi)}. Пейте больше воды.`});
+  else if(tmax>=30) out.push({level:1,title:"Жара",text:`До ${Tu(tmax)} ${when(txi)}.`});
+  const fog = (()=>{ for(let i=i0;i<Math.min(i1,i0+12);i++) if(h.weather_code[i]===45||h.weather_code[i]===48) return i; return -1; })();
+  if(fog>=0) out.push({level:1,title:"Туман",text:`Ожидается ${when(fog)}. Видимость может быть плохой.`});
+  if((d.uv_index_max[0]??0)>=8) out.push({level:1,title:"Очень высокий УФ-индекс",text:`До ${d.uv_index_max[0].toFixed(0)} сегодня. Нужен крем и головной убор.`});
+  return out.sort((a,b)=>b.level-a.level).slice(0,4);
+}
+
+/* ---- moon phase & geomagnetic activity ---- */
+function moon(date){
+  const syn = 29.530588853, ref = Date.UTC(2000,0,6,18,14);
+  const age = (((date - ref)/864e5) % syn + syn) % syn, f = age/syn;
+  const names = ["Новолуние","Растущий серп","Первая четверть","Растущая луна","Полнолуние","Убывающая луна","Последняя четверть","Убывающий серп"];
+  return {name: names[Math.floor(f*8+0.5)%8], illum: Math.round((1-Math.cos(2*Math.PI*f))/2*100), daysToFull: ((0.5 - f + 1) % 1)*syn};
+}
+let kpCache = null;
+async function getKp(){
+  if(kpCache && Date.now()-kpCache.at < 3600e3) return kpCache.v;
+  const v = await getJSON("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json", 10000, 2);
+  kpCache = {at:Date.now(), v}; return v;
+}
+function kpSummary(rows){
+  if(!Array.isArray(rows)) return null;
+  const now = Date.now(), pts = [];
+  for(const r of rows){
+    const t = Array.isArray(r) ? r[0] : r.time_tag, k = Array.isArray(r) ? +r[1] : +r.kp;
+    if(!t || isNaN(k) || t==="time_tag") continue;
+    const ms = Date.parse(t.replace(" ","T")+"Z"); if(ms >= now-3*3600e3 && ms <= now+72*3600e3) pts.push({ms,k});
+  }
+  if(!pts.length) return null;
+  const next24 = Math.max(...pts.filter(p=>p.ms<=now+24*3600e3).map(p=>p.k));
+  const word = k => k<4?"спокойно":k<5?"неспокойно":k<6?"слабая буря":k<7?"умеренная буря":k<8?"сильная буря":"очень сильная буря";
+  const later = Math.max(...pts.filter(p=>p.ms>now+24*3600e3).map(p=>p.k), 0);
+  return {word: word(next24)[0].toUpperCase()+word(next24).slice(1), note:`Kp ${next24.toFixed(0)} в ближайшие сутки; потом: ${word(later)}`};
+}
+
+function hourlySVG(h, start, n, mode="temp"){
+  const W = 44, H = 176, top = 34, plotH = 70, barBase = 150;
   const idx = [...Array(n).keys()].map(i=>start+i).filter(i=>i<h.time.length);
-  const temps = idx.map(i=>h.temperature_2m[i]);
-  const mn = Math.min(...temps), mx = Math.max(...temps), span = (mx-mn)||1;
-  const y = t => top + (1-(t-mn)/span)*plotH;
-  const width = idx.length*W;
-  const maxP = Math.max(2, ...idx.map(i=>h.precipitation[i]||0));
-  const pts = idx.map((i,k)=>`${k*W+W/2},${y(h.temperature_2m[i]).toFixed(1)}`).join(" ");
-  let s = `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" role="img" aria-label="Почасовой прогноз температуры и осадков">`;
-  s += `<defs><linearGradient id="tl" x1="0" x2="1" y1="0" y2="0">${idx.map((i,k)=>`<stop offset="${(k/(idx.length-1||1)).toFixed(3)}" stop-color="${tColor(h.temperature_2m[i])}"/>`).join("")}</linearGradient></defs>`;
+  const width = idx.length*W, F = "JetBrains Mono,monospace";
+  const series = mode==="wind" ? idx.map(i=>h.wind_speed_10m[i]) : mode==="press" ? idx.map(i=>h.pressure_msl[i]*0.750062) : mode==="temp" ? idx.map(i=>h.temperature_2m[i]) : null;
+  const gusts = mode==="wind" ? idx.map(i=>h.wind_gusts_10m[i]) : null;
+  let mn = series ? Math.min(...series, ...(gusts||[])) : 0, mx = series ? Math.max(...series, ...(gusts||[])) : 1;
+  if(mode==="wind") mn = 0;
+  if(mode==="press" && mx-mn < 4){ const m=(mx+mn)/2; mn=m-2; mx=m+2; }
+  const span = (mx-mn)||1, y = v => top + (1-(v-mn)/span)*plotH;
+  const maxP = Math.max(mode==="precip"?1:2, ...idx.map(i=>h.precipitation[i]||0));
+  const lineCol = mode==="wind" ? "#b8ecff" : mode==="press" ? "#d9c7ff" : null;
+  let s = `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" role="img" aria-label="Почасовой прогноз">`;
+  if(mode==="temp") s += `<defs><linearGradient id="tl" x1="0" x2="1" y1="0" y2="0">${idx.map((i,k)=>`<stop offset="${(k/(idx.length-1||1)).toFixed(3)}" stop-color="${tColor(h.temperature_2m[i])}"/>`).join("")}</linearGradient></defs>`;
   idx.forEach((i,k)=>{
     const x=k*W, t=h.time[i], hr=t.slice(11,13);
     if(hr==="00"){ const dd=new Date(t); s += `<line x1="${x}" x2="${x}" y1="0" y2="${H}" stroke="rgba(150,180,220,.25)" stroke-dasharray="3 3"/><text x="${x+4}" y="10" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">${dd.getDate()} ${MON[dd.getMonth()]}</text>`; }
-    const p = h.precipitation[i]||0, bh = p/maxP*30, snow=(h.snowfall?.[i]||0)>0;
-    if(p>0) s += `<rect x="${x+12}" y="${barBase-bh}" width="${W-24}" height="${bh}" rx="2" fill="${snow?"#d9d4ff":"#4aa3ff"}" opacity=".85"/>`;
-    const pp = h.precipitation_probability[i];
-    s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="${pp>=50?"#4aa3ff":"#8fa0b8"}" font-size="10" font-family="JetBrains Mono,monospace">${pp==null?"":pp+"%"}</text>`;
-    s += `<text x="${x+W/2}" y="${barBase+24}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="JetBrains Mono,monospace">${k===0?"сейч":hr+":00"}</text>`;
-    s += `<text x="${x+W/2}" y="${y(h.temperature_2m[i])-8}" text-anchor="middle" fill="#e8eef8" font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${T(h.temperature_2m[i])}°</text>`;
+    const p = h.precipitation[i]||0, snow=(h.snowfall?.[i]||0)>0;
+    if(mode==="precip"){
+      const bh = p/maxP*100;
+      if(p>0) s += `<rect x="${x+9}" y="${barBase-bh}" width="${W-18}" height="${bh}" rx="3" fill="${snow?"#d9d4ff":"#4aa3ff"}"/>`;
+      s += `<text x="${x+W/2}" y="${barBase-bh-6}" text-anchor="middle" fill="${p>0?"#e8eef8":"#8fa0b8"}" font-size="11" font-weight="600" font-family="${F}">${p>0?p.toFixed(1):"0"}</text>`;
+    } else if(mode==="temp" && p>0){
+      const bh = p/maxP*30; s += `<rect x="${x+12}" y="${barBase-bh}" width="${W-24}" height="${bh}" rx="2" fill="${snow?"#d9d4ff":"#4aa3ff"}" opacity=".85"/>`;
+    }
+    if(mode==="wind"){
+      const dir = h.wind_direction_10m[i];
+      s += `<g transform="translate(${x+W/2} ${barBase-12}) rotate(${dir+180})"><path d="M0 -8 L5 4 L0 1 L-5 4 Z" fill="#b8ecff" opacity=".85"/></g>`;
+      s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="${F}">${dirName(dir)}</text>`;
+    } else if(mode!=="press"){
+      const pp = h.precipitation_probability[i];
+      s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="${pp>=50?"#4aa3ff":"#8fa0b8"}" font-size="10" font-family="${F}">${pp==null?"":pp+"%"}</text>`;
+    }
+    s += `<text x="${x+W/2}" y="${barBase+24}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="${F}">${k===0?"сейч":hr+":00"}</text>`;
+    if(series){
+      const v = series[k], lbl = mode==="temp" ? T(v)+"°" : Math.round(v);
+      s += `<text x="${x+W/2}" y="${y(v)-8}" text-anchor="middle" fill="#e8eef8" font-size="11" font-weight="600" font-family="${F}">${lbl}</text>`;
+    }
   });
-  s += `<polyline points="${pts}" fill="none" stroke="url(#tl)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
-  idx.forEach((i,k)=>{ s += `<circle cx="${k*W+W/2}" cy="${y(h.temperature_2m[i]).toFixed(1)}" r="2.5" fill="${tColor(h.temperature_2m[i])}"/>`; });
+  if(series){
+    const pts = series.map((v,k)=>`${k*W+W/2},${y(v).toFixed(1)}`).join(" ");
+    if(gusts) s += `<polyline points="${gusts.map((v,k)=>`${k*W+W/2},${y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="#ffe28c" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>`;
+    s += `<polyline points="${pts}" fill="none" stroke="${lineCol||"url(#tl)"}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+    series.forEach((v,k)=>{ s += `<circle cx="${k*W+W/2}" cy="${y(v).toFixed(1)}" r="2.5" fill="${lineCol||tColor(v)}"/>`; });
+  }
+  if(mode==="wind") s += `<text x="4" y="24" fill="#ffe28c" font-size="10" font-family="Onest,sans-serif">пунктир — порывы, м/с</text>`;
+  if(mode==="press") s += `<text x="4" y="24" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">мм рт. ст.</text>`;
+  if(mode==="precip") s += `<text x="4" y="24" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">мм за час · внизу вероятность</text>`;
   return s + `</svg>`;
 }
 
 /* ================= «Погода на карте»: animated precipitation & cloud forecast ================= */
 const N = 17, HOURS = 12, CW = 256, EDGE = 40;
-const wx = {active:false, data:null, t:0, timer:null, canvas:null, ctx:null, img:null, center:null, extent:null, clouds:true, precip:true, radar:false, loading:false, offset:0};
+const wx = Object.assign({active:false, data:null, t:0, timer:null, canvas:null, ctx:null, img:null, center:null, extent:null, clouds:true, precip:true, wind:false, press:false, temp:false, radar:false, loading:false, offset:0}, store.get("wxLayers", {}));
 /* tileable value noise for cloud/rain texture */
 const NOISE = (()=>{
   const S=128, g=new Float32Array(16*16).map(()=>Math.random()), out=new Float32Array(S*S);
@@ -824,12 +1048,12 @@ async function loadWxGrid(lat, lon){
   const ext = wxExtent(lat, lon), yN = mercY(ext.n), yS = mercY(ext.s);
   const lats=[], lons=[];
   for(let j=0;j<N;j++){ const la = invMercY(yN + (yS-yN)*j/(N-1)); for(let i=0;i<N;i++){ lats.push(la.toFixed(3)); lons.push((((ext.w + (ext.e-ext.w)*i/(N-1))+540)%360-180).toFixed(3)); } }
-  const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lats.join(",")}&longitude=${lons.join(",")}&hourly=precipitation,snowfall,cloud_cover,wind_speed_850hPa,wind_direction_850hPa&forecast_hours=${HOURS+2}&timezone=auto&wind_speed_unit=ms`, 25000);
+  const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lats.join(",")}&longitude=${lons.join(",")}&hourly=precipitation,snowfall,cloud_cover,temperature_2m,wind_speed_10m,wind_direction_10m,pressure_msl,wind_speed_850hPa,wind_direction_850hPa&forecast_hours=${HOURS+2}&timezone=auto&wind_speed_unit=ms`, 25000);
   const arr = Array.isArray(d) ? d : [d];
   const H = arr[0].hourly.time.length, sz = N*N;
-  const P = new Float32Array(H*sz), Sn = new Float32Array(H*sz), C = new Float32Array(H*sz);
+  const P = new Float32Array(H*sz), Sn = new Float32Array(H*sz), C = new Float32Array(H*sz), Tt = new Float32Array(H*sz), U = new Float32Array(H*sz), V = new Float32Array(H*sz), Pr = new Float32Array(H*sz);
   let u=0, v=0;
-  arr.forEach((r,k)=>{ const h=r.hourly; for(let t=0;t<H;t++){ P[t*sz+k]=h.precipitation[t]||0; Sn[t*sz+k]=h.snowfall[t]||0; C[t*sz+k]=h.cloud_cover[t]||0; }
+  arr.forEach((r,k)=>{ const h=r.hourly; for(let t=0;t<H;t++){ P[t*sz+k]=h.precipitation[t]||0; Sn[t*sz+k]=h.snowfall[t]||0; C[t*sz+k]=h.cloud_cover[t]||0; Tt[t*sz+k]=h.temperature_2m[t]??0; const ws10=h.wind_speed_10m[t]||0, wd10=(h.wind_direction_10m[t]||0)*Math.PI/180; U[t*sz+k]=-ws10*Math.sin(wd10); V[t*sz+k]=-ws10*Math.cos(wd10); Pr[t*sz+k]=h.pressure_msl[t]??1013; }
     const ws=h.wind_speed_850hPa?.[0], wd=h.wind_direction_850hPa?.[0]; if(ws!=null&&wd!=null){ u += -ws*Math.sin(wd*Math.PI/180); v += -ws*Math.cos(wd*Math.PI/180); } });
   u/=arr.length; v/=arr.length;
   /* minutes since the first hourly step, so slider 0 = "now" */
@@ -837,7 +1061,7 @@ async function loadWxGrid(lat, lon){
   const offset = clamp((Date.now()-first)/3600000, 0, 1.5);
   /* texture drift: pixels per hour from mean 850 hPa wind */
   const kmPerPx = (ext.e-ext.w)*111*Math.cos(lat*Math.PI/180)/CW;
-  return {ext, P, Sn, C, H, u, v, offset, tz, first, drift:{x: u*3.6/kmPerPx, y: -v*3.6/kmPerPx}};
+  return {ext, P, Sn, C, Tt, U, V, Pr, H, u, v, offset, tz, first, drift:{x: u*3.6/kmPerPx, y: -v*3.6/kmPerPx}};
 }
 
 function sampleField(F, H, t, gx, gy){
@@ -862,10 +1086,14 @@ function drawWx(){
       const gx = x*step, o = (y*CW+x)*4;
       let r=0,g=0,b=0,a=0;
       const n1 = noiseAt(x*1.35 - dx*1.5, y*1.35 - dy*1.5), n2 = noiseAt(x*3.1 - dx*1.9 + 40, y*3.1 - dy*1.9 + 70);
+      if(wx.temp){
+        const col = TLUT[clamp(Math.round((sampleField(D.Tt, D.H, t, gx, gy)+40)*2), 0, 170)];
+        r=col[0]; g=col[1]; b=col[2]; a=.5;
+      }
       if(wx.clouds){
         const c = sampleField(D.C, D.H, t, gx, gy)/100;
         const ca = clamp(c*1.05 - .15 + (n1-.5)*.55, 0, 1) * .5;
-        if(ca>0){ r=g=b=242; a=ca; }
+        if(ca>0){ const na = a + ca*(1-a); r=(r*a*(1-ca)+242*ca)/na; g=(g*a*(1-ca)+242*ca)/na; b=(b*a*(1-ca)+242*ca)/na; a=na; }
       }
       if(wx.precip){
         let p = sampleField(D.P, D.H, t, gx, gy);
@@ -885,9 +1113,15 @@ function drawWx(){
     }
   }
   ctx.putImageData(img,0,0);
-  const src = map.getSource("wxcanvas");
-  if(src && !wx.pending){ wx.pending = true; src.updateImage({url: wx.canvas.toDataURL("image/png"), coordinates: wx.coords}); setTimeout(()=>{ wx.pending=false; }, 60); }
+  pushWxImage();
   updateWxClock();
+}
+function pushWxImage(){
+  const src = map.getSource("wxcanvas"); if(!src) return;
+  if(wx.pending){ wx.dirty = true; return; }
+  wx.pending = true; wx.dirty = false;
+  src.updateImage({url: wx.canvas.toDataURL("image/png"), coordinates: wx.coords});
+  setTimeout(()=>{ wx.pending = false; if(wx.dirty) pushWxImage(); }, 70);
 }
 function updateWxClock(){
   const D = wx.data; if(!D) return;
@@ -922,7 +1156,7 @@ async function openWx(){
   $("#wxText").textContent = current?.wx ? (nowcast(current.wx).text || "Осадки и облака на 12 часов вперёд") : "Осадки и облака на 12 часов вперёд";
   stopSpin();
   if(!current) setPin(lat, lon);
-  map.flyTo({center:[lon,lat], zoom: innerWidth<760 ? 5.6 : 6, pitch:0, duration:1400, essential:true, padding: innerWidth<760 ? {bottom:$("#wxpanel").offsetHeight, top:70, left:0, right:0} : {bottom:$("#wxpanel").offsetHeight+30, top:0,left:0,right:0}});
+  map.flyTo({center:[lon,lat], zoom: innerWidth<760 ? 5.6 : 6, pitch:0, bearing:0, duration:1400, essential:true, padding: innerWidth<760 ? {bottom:$("#wxpanel").offsetHeight, top:70, left:0, right:0} : {bottom:$("#wxpanel").offsetHeight+30, top:0,left:0,right:0}});
   await loadWxFor(lat, lon);
 }
 async function loadWxFor(lat, lon){
@@ -937,6 +1171,7 @@ async function loadWxFor(lat, lon){
     wxTicks(D);
     drawWx();
     setWxCanvas(D.ext);
+    fxStart();
     $("#wxText").textContent = prevText==="Загружаю карту осадков…" ? "Осадки и облака на 12 часов вперёд" : prevText;
     if(current?.wx && Math.abs(current.lat-lat)<0.5 && Math.abs(current.lon-lon)<0.5){
       const nc = nowcast(current.wx).text, area = areaNearby(D);
@@ -970,7 +1205,7 @@ function wxPlay(force){
   wx.timer = setInterval(()=>{ wx.t += 0.1; if(wx.t > HOURS) wx.t = 0; drawWx(); }, 110);
 }
 function closeWx(keepSheet){
-  wx.active = false; clearInterval(wx.timer); wx.timer=null;
+  wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop();
   $("#wxPlay").innerHTML=PLAY_ICON;
   if(map.getLayer("wxcanvas")) map.removeLayer("wxcanvas");
   if(map.getSource("wxcanvas")) map.removeSource("wxcanvas");
@@ -989,8 +1224,11 @@ $("#wxClose").onclick = () => closeWx(false);
 $("#wxPlay").onclick = () => wxPlay(false);
 $("#wxRange").oninput = e => { if(wx.timer) wxPlay(false); wx.t = +e.target.value; drawWx(); };
 $("#wxRefresh").onclick = () => { const c = map.getCenter(); loadWxFor(c.lat, c.lng); };
-$("#tgClouds").onclick = e => { wx.clouds = !wx.clouds; e.currentTarget.setAttribute("aria-pressed", wx.clouds); drawWx(); };
-$("#tgPrecip").onclick = e => { wx.precip = !wx.precip; e.currentTarget.setAttribute("aria-pressed", wx.precip); drawWx(); };
+[["#tgClouds","clouds"],["#tgPrecip","precip"],["#tgWind","wind"],["#tgPress","press"],["#tgTemp","temp"]].forEach(([id,key]) => {
+  const b = $(id); b.setAttribute("aria-pressed", !!wx[key]);
+  b.onclick = () => { setWxLayer(key, !wx[key]); b.setAttribute("aria-pressed", !!wx[key]); };
+});
+$("#lgWind").hidden = !wx.wind; $("#lgPress").hidden = !wx.press; $("#lgTemp").hidden = !wx.temp;
 $("#tgRadar").onclick = e => { wx.radar = !wx.radar; e.currentTarget.setAttribute("aria-pressed", wx.radar); showWxRadar(wx.radar); if(wx.radar) toast("Радар показывает, где осадки идут прямо сейчас. Покрытие есть не во всех странах."); };
 map.on("moveend", () => {
   if(!wx.active || !wx.extent || wx.loading) return;
@@ -999,6 +1237,114 @@ map.on("moveend", () => {
   $("#wxRefresh").hidden = !off;
   document.documentElement.style.setProperty("--wxh", $("#wxpanel").offsetHeight+"px");
 });
+
+/* ---- wind particles & isobars, drawn on screen-space canvases above the map ---- */
+const TLUT = (()=>{ const a=[]; for(let i=0;i<=170;i++){ const hx=tColor(-40+i*0.5); a.push([parseInt(hx.slice(1,3),16),parseInt(hx.slice(3,5),16),parseInt(hx.slice(5,7),16)]); } return a; })();
+$("#lgTempBar").style.background = $("#legendBar").style.background;
+const fx = {wind:$("#wxWind"), iso:$("#wxIso"), parts:[], raf:0, dpr:Math.min(2, devicePixelRatio||1), isoKey:"", moving:false};
+function fxResize(){
+  for(const cv of [fx.wind, fx.iso]){ cv.width = Math.round(innerWidth*fx.dpr); cv.height = Math.round(innerHeight*fx.dpr); }
+  fx.isoKey = ""; fx.parts = [];
+}
+addEventListener("resize", () => { if(wx.active) fxResize(); });
+function gridPos(lng, lat){
+  const e = wx.extent, cx = (e.w+e.e)/2;
+  const L = ((lng - cx + 540) % 360) - 180 + cx;
+  return [(L-e.w)/(e.e-e.w)*(N-1), (mercY(e.n)-mercY(lat))/(mercY(e.n)-mercY(e.s))*(N-1)];
+}
+const spawn = () => ({x: Math.random()*innerWidth, y: Math.random()*innerHeight, age: 0, max: 50 + Math.random()*70});
+function drawWind(){
+  const D = wx.data, ctx = fx.wind.getContext("2d"), W = innerWidth, H = innerHeight, t = clamp(wx.t + D.offset, 0, D.H-1.001);
+  ctx.setTransform(fx.dpr,0,0,fx.dpr,0,0);
+  if(fx.moving){ ctx.clearRect(0,0,W,H); return; }
+  ctx.globalCompositeOperation = "destination-in"; ctx.fillStyle = "rgba(0,0,0,.92)"; ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation = "source-over"; ctx.lineWidth = 1.4; ctx.lineCap = "round";
+  const target = innerWidth < 760 ? 650 : 1300, k = .26;
+  while(fx.parts.length < target) fx.parts.push(spawn());
+  const buckets = [[],[],[],[]];
+  for(const p of fx.parts){
+    if(p.age++ > p.max){ Object.assign(p, spawn()); continue; }
+    const ll = map.unproject([p.x, p.y]), [gx, gy] = gridPos(ll.lng, ll.lat);
+    if(!(gx>=0 && gy>=0 && gx<=N-1 && gy<=N-1)){ Object.assign(p, spawn(), {age: p.max}); continue; }
+    const u = sampleField(D.U, D.H, t, gx, gy), v = sampleField(D.V, D.H, t, gx, gy), sp = Math.hypot(u,v);
+    const nx = p.x + u*k, ny = p.y - v*k;
+    buckets[sp<4?0:sp<8?1:sp<13?2:3].push(p.x, p.y, nx, ny);
+    p.x = nx; p.y = ny;
+  }
+  const cols = ["rgba(232,238,248,.55)","rgba(184,236,255,.8)","rgba(255,226,140,.9)","rgba(255,140,110,.95)"];
+  buckets.forEach((b,i) => { if(!b.length) return; ctx.strokeStyle = cols[i]; ctx.beginPath(); for(let j=0;j<b.length;j+=4){ ctx.moveTo(b[j],b[j+1]); ctx.lineTo(b[j+2],b[j+3]); } ctx.stroke(); });
+}
+function drawIso(){
+  const D = wx.data, ctx = fx.iso.getContext("2d"), t = clamp(wx.t + D.offset, 0, D.H-1.001), M = 33, f = (N-1)/(M-1);
+  ctx.setTransform(fx.dpr,0,0,fx.dpr,0,0); ctx.clearRect(0,0,innerWidth,innerHeight);
+  const G = new Float32Array(M*M), S = new Float32Array(M*M*2), e = wx.extent, yN = mercY(e.n), yS = mercY(e.s);
+  let lo = 1e9, hi = -1e9;
+  for(let j=0;j<M;j++) for(let i=0;i<M;i++){
+    const v = sampleField(D.Pr, D.H, t, i*f, j*f); G[j*M+i] = v; lo = Math.min(lo,v); hi = Math.max(hi,v);
+    const p = map.project([e.w + (e.e-e.w)*i/(M-1), invMercY(yN + (yS-yN)*j/(M-1))]); S[(j*M+i)*2] = p.x; S[(j*M+i)*2+1] = p.y;
+  }
+  const P = k => [S[k*2], S[k*2+1]];
+  const lerp = (p1,p2,v1,v2,L) => { const r = (L-v1)/((v2-v1)||1e-6); return [p1[0]+(p2[0]-p1[0])*r, p1[1]+(p2[1]-p1[1])*r]; };
+  const labels = [];
+  for(let L = Math.ceil(lo/2)*2; L <= hi; L += 2){
+    const major = L % 4 === 0;
+    ctx.strokeStyle = major ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.45)"; ctx.lineWidth = major ? 1.6 : 1;
+    ctx.beginPath(); let cnt = 0;
+    for(let j=0;j<M-1;j++) for(let i=0;i<M-1;i++){
+      const ia=j*M+i, ib=ia+1, ic=ia+M+1, id=ia+M, a=G[ia], b=G[ib], c=G[ic], d=G[id];
+      const idx = (a>L?8:0)|(b>L?4:0)|(c>L?2:0)|(d>L?1:0); if(idx===0||idx===15) continue;
+      const pa=P(ia), pb=P(ib), pc=P(ic), pd=P(id);
+      const top=()=>lerp(pa,pb,a,b,L), right=()=>lerp(pb,pc,b,c,L), bottom=()=>lerp(pd,pc,d,c,L), left=()=>lerp(pa,pd,a,d,L);
+      const segs = {1:[[left,bottom]],2:[[bottom,right]],3:[[left,right]],4:[[top,right]],5:[[left,top],[bottom,right]],6:[[top,bottom]],7:[[left,top]],8:[[left,top]],9:[[top,bottom]],10:[[left,bottom],[top,right]],11:[[top,right]],12:[[left,right]],13:[[bottom,right]],14:[[left,bottom]]}[idx];
+      for(const [g1,g2] of segs){ const p=g1(), q=g2(); ctx.moveTo(p[0],p[1]); ctx.lineTo(q[0],q[1]);
+        if(major && cnt++ % 45 === 22) labels.push([(p[0]+q[0])/2, (p[1]+q[1])/2, L]); }
+    }
+    ctx.stroke();
+  }
+  ctx.font = "600 11px JetBrains Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const placed = [];
+  for(const [x,y,L] of labels){
+    if(x<0||y<0||x>innerWidth||y>innerHeight || placed.some(([px,py])=>Math.hypot(px-x,py-y)<120)) continue;
+    placed.push([x,y]);
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(5,7,13,.85)"; ctx.strokeText(L, x, y); ctx.fillStyle = "#fff"; ctx.fillText(L, x, y);
+  }
+  /* highs and lows on the model grid */
+  const sz = N*N, t0 = Math.floor(t), ft = t - t0, at = k => D.Pr[t0*sz+k]*(1-ft) + D.Pr[Math.min(D.H-1,t0+1)*sz+k]*ft;
+  ctx.font = "700 20px Unbounded, Onest, sans-serif";
+  for(let j=2;j<N-2;j++) for(let i=2;i<N-2;i++){
+    const v = at(j*N+i); let mx = true, mn = true;
+    for(let dj=-2;dj<=2;dj++) for(let di=-2;di<=2;di++){ if(!di&&!dj) continue; const w = at((j+dj)*N+i+di); if(w>=v-0.2) mx=false; if(w<=v+0.2) mn=false; }
+    if(!mx && !mn) continue;
+    const lat = invMercY(mercY(e.n) + (mercY(e.s)-mercY(e.n))*j/(N-1)), lon = e.w + (e.e-e.w)*i/(N-1), p = map.project([lon,lat]);
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(5,7,13,.85)"; ctx.fillStyle = mx ? "#7cc4ff" : "#ff8a7a";
+    ctx.strokeText(mx?"В":"Н", p.x, p.y); ctx.fillText(mx?"В":"Н", p.x, p.y);
+    ctx.font = "600 11px JetBrains Mono, monospace"; ctx.lineWidth = 3;
+    ctx.strokeText(Math.round(v), p.x, p.y+17); ctx.fillText(Math.round(v), p.x, p.y+17);
+    ctx.font = "700 20px Unbounded, Onest, sans-serif";
+  }
+}
+function fxLoop(){
+  fx.raf = requestAnimationFrame(fxLoop);
+  if(!wx.active || !wx.data) return;
+  if(wx.wind) drawWind();
+  if(wx.press){
+    const c = map.getCenter(), key = [wx.t.toFixed(2), c.lng.toFixed(4), c.lat.toFixed(4), map.getZoom().toFixed(3), map.getBearing().toFixed(1), map.getPitch().toFixed(1), innerWidth, innerHeight].join("|");
+    if(key !== fx.isoKey){ fx.isoKey = key; drawIso(); }
+  }
+}
+function fxStart(){ fxResize(); fx.wind.hidden = !wx.wind; fx.iso.hidden = !wx.press; if(!fx.raf) fxLoop(); }
+function fxStop(){
+  cancelAnimationFrame(fx.raf); fx.raf = 0; fx.parts = [];
+  for(const cv of [fx.wind, fx.iso]){ cv.getContext("2d").clearRect(0,0,cv.width,cv.height); cv.hidden = true; }
+}
+map.on("movestart", () => { fx.moving = true; });
+map.on("moveend", () => { fx.moving = false; fx.parts = []; });
+function setWxLayer(key, val){
+  wx[key] = val; store.set("wxLayers", {clouds:wx.clouds, precip:wx.precip, wind:wx.wind, press:wx.press, temp:wx.temp});
+  $("#lgWind").hidden = !wx.wind; $("#lgPress").hidden = !wx.press; $("#lgTemp").hidden = !wx.temp;
+  if(wx.active){ fx.wind.hidden = !wx.wind; fx.iso.hidden = !wx.press; fx.isoKey = ""; if(!wx.wind) fx.wind.getContext("2d").clearRect(0,0,fx.wind.width,fx.wind.height); if(!wx.press) fx.iso.getContext("2d").clearRect(0,0,fx.iso.width,fx.iso.height); drawWx(); }
+  document.documentElement.style.setProperty("--wxh", $("#wxpanel").offsetHeight+"px");
+}
 
 /* ================= ambient weather sound (synthesised, no files) ================= */
 const sound = {
@@ -1076,24 +1422,52 @@ const sound = {
 $("#sound").onclick = () => sound.toggle();
 document.addEventListener("visibilitychange", () => { if(!sound.ctx || !sound.on) return; document.hidden ? sound.ctx.suspend() : sound.ctx.resume(); });
 
-/* ================= favourites ================= */
+/* ================= my cities ================= */
 let favs = store.get("favs", []);
-function renderFavs(){
-  const box=$("#favs"); box.innerHTML="";
-  favs.slice(0,8).forEach(f=>{
-    const b=document.createElement("button"); b.className="chip glass"; b.textContent=f.name;
-    b.onclick=()=>openPlace(f.lat,f.lon,{name:f.name,sub:f.sub,zoom:6}); box.appendChild(b);
-  });
-}
 const keyOf = p => p.lat.toFixed(2)+","+p.lon.toFixed(2);
-function updateStar(){ const s = !!current && favs.some(f=>keyOf(f)===keyOf(current)); $("#star").setAttribute("aria-pressed", s); $("#star").setAttribute("aria-label", s?"Убрать из избранного":"Добавить в избранное"); }
-$("#star").onclick = () => {
+const isSaved = () => !!current && favs.some(f=>keyOf(f)===keyOf(current));
+function updateStar(){
+  const s = isSaved();
+  $("#star").setAttribute("aria-pressed", s); $("#star").setAttribute("aria-label", s?"Убрать из моих городов":"Сохранить в мои города"); $("#star").title = s?"Убрать из моих городов":"Сохранить в мои города";
+  const q = $("#qSave"); if(q){ q.classList.toggle("saved", s); q.textContent = s ? "★ В моих городах" : "☆ Сохранить город"; }
+}
+function saveFavs(){ store.set("favs", favs); updateStar(); if(!$("#cities").hidden) renderCities(); }
+function toggleSave(){
   if(!current) return;
   const k = keyOf(current);
-  if(favs.some(f=>keyOf(f)===k)){ favs = favs.filter(f=>keyOf(f)!==k); toast("Убрано из избранного"); }
-  else { favs.unshift({lat:current.lat, lon:current.lon, name:current.name, sub:current.sub}); toast("Добавлено в избранное"); }
-  store.set("favs",favs); renderFavs(); updateStar();
-};
+  if(favs.some(f=>keyOf(f)===k)){ favs = favs.filter(f=>keyOf(f)!==k); toast(`${current.name} убран из моих городов`); }
+  else {
+    favs.push({lat:current.lat, lon:current.lon, name:current.name, sub:current.sub});
+    toast(favs.length===1 ? `${current.name} сохранён. Это главный город: он будет открываться при запуске` : `${current.name} сохранён в мои города`);
+  }
+  saveFavs();
+}
+$("#star").onclick = toggleSave;
+let citySeq = 0;
+async function renderCities(){
+  const box = $("#cities"), seq = ++citySeq;
+  const rows = favs.map((f,i)=>`<div class="crow">
+      <button class="open" data-i="${i}"><span class="ci" id="ci-${i}"></span><span class="nm"><b>${esc(f.name)}${i===0?`<span class="home-badge">главный</span>`:""}</b><small>${esc(f.sub||fmtCoord(f.lat,f.lon))}</small></span><span class="tt" id="ct-${i}">…</span></button>
+      ${i>0?`<button class="mini" data-home="${i}" title="Сделать главным" aria-label="Сделать ${esc(f.name)} главным городом"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/></svg></button>`:""}
+      <button class="mini" data-del="${i}" title="Удалить" aria-label="Удалить ${esc(f.name)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>`).join("");
+  const addCur = current && !isSaved() && current.wx ? `<button class="addcur" id="addCur">☆ Сохранить «${esc(current.name)}»</button>` : "";
+  box.innerHTML = `<h3><span>Мои города</span><span>${favs.length||""}</span></h3>${rows || `<div class="empty">Пока пусто. Откройте любой город и нажмите «Сохранить город» — он появится здесь, а первый сохранённый будет открываться при запуске.</div>`}${addCur}`;
+  box.querySelectorAll(".open").forEach(b => b.onclick = () => { const f=favs[+b.dataset.i]; closeCities(); openPlace(f.lat,f.lon,{name:f.name,sub:f.sub,zoom:6}); });
+  box.querySelectorAll("[data-home]").forEach(b => b.onclick = () => { const i=+b.dataset.home; const [f]=favs.splice(i,1); favs.unshift(f); saveFavs(); toast(`${f.name} теперь главный город`); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const i=+b.dataset.del; const [f]=favs.splice(i,1); saveFavs(); toast(`${f.name} удалён`); });
+  if($("#addCur")) $("#addCur").onclick = () => toggleSave();
+  if(!favs.length) return;
+  try{
+    const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${favs.map(f=>f.lat.toFixed(3)).join(",")}&longitude=${favs.map(f=>f.lon.toFixed(3)).join(",")}&current=temperature_2m,weather_code,is_day&timezone=auto`, 12000);
+    if(seq!==citySeq) return;
+    (Array.isArray(d)?d:[d]).forEach((r,i)=>{ const t=$("#ct-"+i), c=$("#ci-"+i); if(t) t.textContent = Tu(r.current.temperature_2m); if(c) c.innerHTML = icon(r.current.weather_code, r.current.is_day, 30); });
+  }catch(e){ favs.forEach((f,i)=>{ const t=$("#ct-"+i); if(t) t.textContent="—"; }); }
+}
+function closeCities(){ $("#cities").hidden = true; $("#citiesBtn").setAttribute("aria-expanded","false"); }
+$("#citiesBtn").onclick = e => { e.stopPropagation(); const box=$("#cities"); if(box.hidden){ box.hidden=false; $("#citiesBtn").setAttribute("aria-expanded","true"); hideResults(); renderCities(); } else closeCities(); };
+document.addEventListener("click", e => { if(!$("#cities").hidden && !e.target.closest("#cities,#citiesBtn")) closeCities(); });
+const renderFavs = () => { if(!$("#cities").hidden) renderCities(); };
 
 /* ================= search ================= */
 let sTimer=null, sIdx=-1, sItems=[], sSeq=0;
@@ -1169,7 +1543,8 @@ addEventListener("keydown", e => { if(e.key==="Escape"){ if(wx.active) closeWx(f
 
 map.on("load", () => {
   buildMapLayers(); renderLayerUI(); renderFavs();
-  if(spinning) setTimeout(spinStep, 800);
+  if(favs.length){ const f = favs[0]; setTimeout(() => openPlace(f.lat, f.lon, {name:f.name, sub:f.sub, zoom:6}), 500); }
+  else if(spinning) setTimeout(spinStep, 800);
   setTimeout(()=>{ $("#hint").style.opacity=0; }, 9000);
 });
 if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});

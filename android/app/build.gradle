@@ -1,0 +1,24 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'by.atmosfera.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId "by.atmosfera.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("HOME") + "/apk/atmosfera.keystore")
+            storePassword "atmosfera-store"
+            keyAlias "atmosfera"
+            keyPassword "atmosfera-store"
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.release }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

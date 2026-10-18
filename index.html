@@ -25,6 +25,18 @@
   --display:"Unbounded","Onest",system-ui,sans-serif; --body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:dark;
 }
+:root[data-theme="light"]{
+  --space:#eef3f9; --panel:rgba(255,255,255,.92); --panel-solid:#ffffff; --raise:rgba(20,45,90,.045); --line:rgba(20,45,90,.14);
+  --fg:#0f1a2b; --muted:#56667d; --ice:#1d78d0; --sun:#c9741a; --rain:#1f78e0; --snow:#6f62d6; --warn:#d4552f;
+  color-scheme:light;
+}
+:root[data-theme="light"] .qbtn.primary, :root[data-theme="light"] .play{color:#fff}
+:root[data-theme="light"] .alert.l1{background:#fff6dc;border-color:#f0cf6a;color:#6d5000}
+:root[data-theme="light"] .alert.l2{background:#ffe9e2;border-color:#f2a58f;color:#8a2c12}
+:root[data-theme="light"] .alert.l3{background:#ffe1ea;border-color:#ee8fab;color:#8c1239}
+:root[data-theme="light"] .ncbars i{background:rgba(20,45,90,.12)}
+:root[data-theme="light"] .layer[aria-pressed="true"] .chk::after{border-color:#fff}
+:root[data-theme="light"] .maplibregl-ctrl-attrib{background:rgba(255,255,255,.7)!important}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
@@ -217,6 +229,47 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
 .qbtn.saved{border-color:rgba(255,179,92,.6);color:var(--sun)}
 #wxIso,#wxWind{position:fixed;inset:0;pointer-events:none;z-index:1}
 
+/* settings, peek card, reticle, month */
+.settings{position:fixed;z-index:8;top:calc(70px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));width:min(360px,calc(100vw - 24px));border-radius:18px;padding:10px 14px 14px;max-height:calc(100vh - 100px);overflow:auto}
+.settings h3{display:flex;justify-content:space-between;align-items:center;margin:2px 0 6px;font:700 15px var(--display)}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.srow small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.srow input[type=checkbox]{width:22px;height:22px;accent-color:var(--ice);flex:none}
+.segm{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--raise);border:1px solid var(--line);flex:none}
+.segm button{border:0;background:none;padding:6px 10px;border-radius:8px;font-size:13px;color:var(--muted)}
+.segm button[aria-checked="true"]{background:rgba(124,196,255,.22);color:var(--fg)}
+.snote{color:var(--muted);font-size:12px;line-height:1.4;margin-top:10px}
+.reticle{position:fixed;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;z-index:2;pointer-events:none;border:2px solid rgba(255,255,255,.85);border-radius:50%;box-shadow:0 0 0 1px rgba(5,7,13,.5),inset 0 0 0 1px rgba(5,7,13,.4)}
+.reticle::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#fff}
+.peek{position:fixed;z-index:4;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));width:min(380px,calc(100vw - 24px));border-radius:18px;padding:12px 14px;text-align:left;cursor:pointer;transition:opacity .25s}
+.peek.loading{opacity:.55}
+.peek:hover{border-color:var(--ice)}
+.pk-top{display:flex;align-items:center;gap:10px}
+.pk-name{flex:1;min-width:0}
+.pk-name b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-name small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-t{font:500 34px/1 var(--display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pk-desc{margin-top:6px;font-size:13px;color:var(--muted)}
+.pk-nc{margin-top:6px;font-size:14px;font-weight:600}
+.pk-hours{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.ph{display:flex;flex-direction:column;align-items:center;gap:1px;font-variant-numeric:tabular-nums}
+.ph small{font:11px var(--mono);color:var(--muted)}
+.ph b{font:600 13px var(--mono)}
+body.sheet-open:not(.sheet-min) .peek{display:none}
+.mhead{display:flex;align-items:center;gap:12px;padding:14px 0 6px}
+.mhead b{font:700 16px var(--display)}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px}
+.mw{text-align:center;font:600 11px var(--body);color:var(--muted);padding-bottom:2px}
+.mc{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px 8px;border-radius:10px;background:var(--raise);border:1px solid var(--line);font-variant-numeric:tabular-nums;overflow:hidden;min-width:0}
+.mc.blank{background:none;border-color:transparent}
+.mc.approx{opacity:.62;border-style:dashed}
+.mc .md{font:600 12px var(--mono)}
+.mc .md small{font:10px var(--body);color:var(--muted)}
+.mc.we .md{color:var(--warn)}
+.mc b{font:600 12px var(--mono)}
+.mc > small{font:11px var(--mono);color:var(--muted)}
+.mc .mp{position:absolute;left:0;bottom:0;height:3px;background:var(--rain)}
+
 @media (max-width:760px){
   .brand span{display:none}
   .brand{padding:0 12px}
@@ -229,6 +282,8 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
   body.sheet-open.sheet-min .toolbar{bottom:180px}
   body.sheet-open .dock, body.sheet-open .hint{display:none}
   .layers{max-height:52vh}
+  .peek{top:calc(66px + env(safe-area-inset-top,0px))}
+  body.sheet-open.sheet-min .peek{display:block}
   .wxpanel{bottom:0;border-radius:22px 22px 0 0;border-bottom:0;width:100%;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   body.wxmode .toolbar{bottom:calc(var(--wxh,220px) + 12px)}
 }
@@ -281,6 +336,9 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
 </div>
 
 <div class="toolbar">
+  <button class="icon-btn glass" id="settingsBtn" title="Настройки" aria-label="Настройки" aria-expanded="false" aria-controls="settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
   <button class="icon-btn glass" id="wxBtn" title="Погода на карте" aria-label="Погода на карте" aria-pressed="false">
     <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15h10a4 4 0 0 0 0-8 6 6 0 0 0-11.6 1.5A3.5 3.5 0 0 0 7 15z"/><path d="M8 19l-1 2M12 19l-1 2M16 19l-1 2"/></svg>
   </button>
@@ -296,6 +354,9 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
   </button>
 </div>
 
+<div class="reticle" id="reticle" hidden></div>
+<button class="peek glass" id="peek" hidden aria-live="polite" aria-label="Погода в центре экрана, нажмите для подробностей"><div id="peekBody">Загружаю погоду…</div></button>
+<section class="settings glass" id="settings" hidden aria-label="Настройки"></section>
 <div class="hint glass" id="hint">Нажмите на любую точку планеты, чтобы увидеть погоду</div>
 
 <aside class="sheet glass" id="sheet" hidden aria-live="polite">
@@ -638,6 +699,7 @@ function setPin(lat, lon){
   const p=document.createElement("div"); p.className="pin"; pin=new maplibregl.Marker({element:p}).setLngLat([lon,lat]).addTo(map);
 }
 async function openPlace(lat, lon, meta={}){
+  $("#peek").hidden = true; $("#reticle").hidden = true;
   lon = ((lon+540)%360)-180;
   if(wx.active) closeWx(true);
   stopSpin();
@@ -745,6 +807,7 @@ function renderWeather(){
     <button class="qbtn" id="qTomorrow">Погода завтра</button>
     <button class="qbtn" id="qCar">Когда мыть машину?</button>
     <button class="qbtn" id="qWear">Как одеться?</button>
+    <button class="qbtn" id="qMonth">Прогноз на месяц</button>
     <button class="qbtn" id="qShare">Поделиться</button>
   </div>
   <div class="answer" id="answer" hidden></div>
@@ -781,7 +844,7 @@ function renderWeather(){
       <div class="pr">${pr>0 ? pr.toFixed(1) : "—"}<small>${pp==null?"":pp+"%"}</small></div>
     </div><div class="dayx" id="dx-${i}" ${open?"":"hidden"}>${open?dayDetail(w,i):""}</div>`;
   });
-  html += `</div></div>`;
+  html += `</div><button class="qbtn" id="qMonth2" style="width:100%;margin-top:10px">Прогноз на месяц ›</button></div>`;
 
   /* more: moon, geomagnetic, water */
   const mo = moon(new Date());
@@ -821,6 +884,7 @@ function renderWeather(){
   $("#qCar").onclick = () => answer(carWashText(w));
   $("#qWear").onclick = () => answer(wearText(w));
   $("#qShare").onclick = () => shareForecast(w);
+  $("#qMonth").onclick = $("#qMonth2").onclick = () => showMonth();
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
     hourMode = b.dataset.mode; store.set("hourMode", hourMode);
     document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x===b));
@@ -983,7 +1047,7 @@ function hourlySVG(h, start, n, mode="temp"){
   if(mode==="temp") s += `<defs><linearGradient id="tl" x1="0" x2="1" y1="0" y2="0">${idx.map((i,k)=>`<stop offset="${(k/(idx.length-1||1)).toFixed(3)}" stop-color="${tColor(h.temperature_2m[i])}"/>`).join("")}</linearGradient></defs>`;
   idx.forEach((i,k)=>{
     const x=k*W, t=h.time[i], hr=t.slice(11,13);
-    if(hr==="00"){ const dd=new Date(t); s += `<line x1="${x}" x2="${x}" y1="0" y2="${H}" stroke="rgba(150,180,220,.25)" stroke-dasharray="3 3"/><text x="${x+4}" y="10" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">${dd.getDate()} ${MON[dd.getMonth()]}</text>`; }
+    if(hr==="00"){ const dd=new Date(t); s += `<line x1="${x}" x2="${x}" y1="0" y2="${H}" stroke="rgba(150,180,220,.25)" stroke-dasharray="3 3"/><text x="${x+4}" y="10" style="fill:var(--muted)" font-size="10" font-family="Onest,sans-serif">${dd.getDate()} ${MON[dd.getMonth()]}</text>`; }
     const p = h.precipitation[i]||0, snow=(h.snowfall?.[i]||0)>0;
     if(mode==="precip"){
       const bh = p/maxP*100;
@@ -995,15 +1059,15 @@ function hourlySVG(h, start, n, mode="temp"){
     if(mode==="wind"){
       const dir = h.wind_direction_10m[i];
       s += `<g transform="translate(${x+W/2} ${barBase-12}) rotate(${dir+180})"><path d="M0 -8 L5 4 L0 1 L-5 4 Z" fill="#b8ecff" opacity=".85"/></g>`;
-      s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="${F}">${dirName(dir)}</text>`;
+      s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" style="fill:var(--muted)" font-size="10" font-family="${F}">${dirName(dir)}</text>`;
     } else if(mode!=="press"){
       const pp = h.precipitation_probability[i];
       s += `<text x="${x+W/2}" y="${barBase+12}" text-anchor="middle" fill="${pp>=50?"#4aa3ff":"#8fa0b8"}" font-size="10" font-family="${F}">${pp==null?"":pp+"%"}</text>`;
     }
-    s += `<text x="${x+W/2}" y="${barBase+24}" text-anchor="middle" fill="#8fa0b8" font-size="10" font-family="${F}">${k===0?"сейч":hr+":00"}</text>`;
+    s += `<text x="${x+W/2}" y="${barBase+24}" text-anchor="middle" style="fill:var(--muted)" font-size="10" font-family="${F}">${k===0?"сейч":hr+":00"}</text>`;
     if(series){
       const v = series[k], lbl = mode==="temp" ? T(v)+"°" : Math.round(v);
-      s += `<text x="${x+W/2}" y="${y(v)-8}" text-anchor="middle" fill="#e8eef8" font-size="11" font-weight="600" font-family="${F}">${lbl}</text>`;
+      s += `<text x="${x+W/2}" y="${y(v)-8}" text-anchor="middle" style="fill:var(--fg)" font-size="11" font-weight="600" font-family="${F}">${lbl}</text>`;
     }
   });
   if(series){
@@ -1013,8 +1077,8 @@ function hourlySVG(h, start, n, mode="temp"){
     series.forEach((v,k)=>{ s += `<circle cx="${k*W+W/2}" cy="${y(v).toFixed(1)}" r="2.5" fill="${lineCol||tColor(v)}"/>`; });
   }
   if(mode==="wind") s += `<text x="4" y="24" fill="#ffe28c" font-size="10" font-family="Onest,sans-serif">пунктир — порывы, м/с</text>`;
-  if(mode==="press") s += `<text x="4" y="24" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">мм рт. ст.</text>`;
-  if(mode==="precip") s += `<text x="4" y="24" fill="#8fa0b8" font-size="10" font-family="Onest,sans-serif">мм за час · внизу вероятность</text>`;
+  if(mode==="press") s += `<text x="4" y="24" style="fill:var(--muted)" font-size="10" font-family="Onest,sans-serif">мм рт. ст.</text>`;
+  if(mode==="precip") s += `<text x="4" y="24" style="fill:var(--muted)" font-size="10" font-family="Onest,sans-serif">мм за час · внизу вероятность</text>`;
   return s + `</svg>`;
 }
 
@@ -1152,7 +1216,7 @@ function setWxCanvas(ext){
 async function openWx(){
   if(wx.loading) return;
   const lat = current ? current.lat : map.getCenter().lat, lon = current ? current.lon : map.getCenter().lng;
-  wx.active = true; wx.center = {lat, lon};
+  wx.active = true; wx.center = {lat, lon}; $("#peek").hidden = true; $("#reticle").hidden = true;
   document.body.classList.add("wxmode"); $("#wxBtn").setAttribute("aria-pressed","true");
   $("#sheet").hidden = true; document.body.classList.remove("sheet-open","sheet-min");
   $("#layers").hidden = true; $("#hint").style.opacity = 0;
@@ -1211,7 +1275,7 @@ function wxPlay(force){
   wx.timer = setInterval(()=>{ wx.t += 0.1; if(wx.t > HOURS) wx.t = 0; drawWx(); }, 110);
 }
 function closeWx(keepSheet){
-  wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop();
+  wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop(); setTimeout(()=>peekUpdate(true), 700);
   $("#wxPlay").innerHTML=PLAY_ICON;
   if(map.getLayer("wxcanvas")) map.removeLayer("wxcanvas");
   if(map.getSource("wxcanvas")) map.removeSource("wxcanvas");
@@ -1373,7 +1437,7 @@ const sound = {
     this.nodes = {master, rainG, rainF, windG, windF, lfo2G};
   },
   params(){
-    const w = current?.wx?.current;
+    const w = (peek.data && !$("#peek").hidden) ? peek.data.w.current : current?.wx?.current;
     if(!w) return {rain:0, wind:.25, storm:false, snow:false};
     const k = (WMO[w.weather_code]||["","cloud"])[1];
     const p = Math.max(w.precipitation||0, (k==="rain"||k==="storm") ? 0.8 : k==="drizzle" ? 0.3 : 0);
@@ -1418,7 +1482,7 @@ const sound = {
       if(!this.ctx){ this.ctx = new (window.AudioContext||window.webkitAudioContext)(); this.build(); }
       this.on = !this.on;
       if(this.on){ await this.ctx.resume(); this.nodes.master.gain.setTargetAtTime(.9, this.ctx.currentTime, .6); this.update();
-        toast(current ? `Звуки погоды: ${current.name}` : "Звуки погоды. Выберите место, и звук подстроится под его погоду."); }
+        toast(current ? `Звуки погоды: ${current.name}` : peek.data ? `Звуки погоды: ${peek.data.n.name}` : "Звуки погоды. Выберите место, и звук подстроится под его погоду."); }
       else { this.nodes.master.gain.setTargetAtTime(0, this.ctx.currentTime, .3); clearTimeout(this.dropT); clearTimeout(this.thunderT); setTimeout(()=>{ if(!this.on) this.ctx.suspend(); }, 1200); }
       $("#sound").setAttribute("aria-pressed", this.on); $("#soundWaves").setAttribute("opacity", this.on ? "1" : ".35");
       store.set("sound", this.on);
@@ -1437,7 +1501,7 @@ function updateStar(){
   $("#star").setAttribute("aria-pressed", s); $("#star").setAttribute("aria-label", s?"Убрать из моих городов":"Сохранить в мои города"); $("#star").title = s?"Убрать из моих городов":"Сохранить в мои города";
   const q = $("#qSave"); if(q){ q.classList.toggle("saved", s); q.textContent = s ? "★ В моих городах" : "☆ Сохранить город"; }
 }
-function saveFavs(){ store.set("favs", favs); updateStar(); if(!$("#cities").hidden) renderCities(); }
+function saveFavs(){ store.set("favs", favs); updateStar(); if(!$("#cities").hidden) renderCities(); syncApp(); }
 function toggleSave(){
   if(!current) return;
   const k = keyOf(current);
@@ -1472,7 +1536,7 @@ async function renderCities(){
 }
 function closeCities(){ $("#cities").hidden = true; $("#citiesBtn").setAttribute("aria-expanded","false"); }
 $("#citiesBtn").onclick = e => { e.stopPropagation(); const box=$("#cities"); if(box.hidden){ box.hidden=false; $("#citiesBtn").setAttribute("aria-expanded","true"); hideResults(); renderCities(); } else closeCities(); };
-document.addEventListener("click", e => { if(!$("#cities").hidden && !e.target.closest("#cities,#citiesBtn")) closeCities(); });
+document.addEventListener("click", e => { if(!$("#cities").hidden && e.target.isConnected && !e.target.closest("#cities,#citiesBtn")) closeCities(); });
 const renderFavs = () => { if(!$("#cities").hidden) renderCities(); };
 
 /* ================= search ================= */
@@ -1523,6 +1587,148 @@ $("#locate").onclick = () => {
     {enableHighAccuracy:true, timeout:10000});
 };
 
+/* ================= settings, theme, Android bridge ================= */
+const settings = Object.assign({theme:"auto", peek:true, notify:false}, store.get("settings", {}));
+const inApp = !!window.AtmApp || /AtmosferaApp/.test(navigator.userAgent);
+const darkMQ = matchMedia("(prefers-color-scheme: dark)");
+function applyTheme(){
+  const t = settings.theme==="auto" ? (darkMQ.matches ? "dark" : "light") : settings.theme;
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]').content = t==="light" ? "#eef3f9" : "#05070d";
+  try{ window.AtmApp?.setTheme?.(t); }catch(e){}
+}
+darkMQ.addEventListener?.("change", () => { if(settings.theme==="auto") applyTheme(); });
+applyTheme();
+function saveSettings(){ store.set("settings", settings); syncApp(); }
+/* tell the Android shell which city the widget and notifications should follow */
+function syncApp(){
+  if(!window.AtmApp) return;
+  try{
+    const f = favs[0] || (current ? {lat:current.lat, lon:current.lon, name:current.name} : null);
+    window.AtmApp.setHome(JSON.stringify(f ? {lat:f.lat, lon:f.lon, name:f.name} : null));
+    window.AtmApp.setUnits(units);
+    window.AtmApp.setNotify(!!settings.notify);
+  }catch(e){}
+}
+function seg(name, opts, val){ return `<div class="segm" role="radiogroup" aria-label="${name}">${opts.map(([v,l])=>`<button role="radio" data-v="${v}" aria-checked="${v===val}">${l}</button>`).join("")}</div>`; }
+function renderSettings(){
+  const box = $("#settings");
+  box.innerHTML = `<h3><span>Настройки</span><button class="mini" id="setClose" aria-label="Закрыть настройки"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h3>
+    <div class="srow"><span>Оформление</span>${seg("Оформление",[["auto","Авто"],["light","Светлое"],["dark","Тёмное"]],settings.theme)}</div>
+    <div class="srow"><span>Градусы</span>${seg("Градусы",[["C","°C"],["F","°F"]],units)}</div>
+    <label class="srow sw"><span>Погода в центре экрана<small>Крутите глобус — карточка покажет погоду места под прицелом</small></span><input type="checkbox" id="setPeek" ${settings.peek?"checked":""}></label>
+    <label class="srow sw"><span>Уведомления о дожде и опасной погоде<small>${inApp ? (favs.length ? `Для главного города: ${esc(favs[0].name)}` : "Сначала сохраните главный город в «Моих городах»") : "Работают в Android-приложении"}</small></span><input type="checkbox" id="setNotify" ${settings.notify?"checked":""} ${inApp?"":"disabled"}></label>
+    ${inApp ? `<div class="snote">Виджет: долго нажмите на пустое место рабочего стола → «Виджеты» → «Атмосфера». Он показывает главный город.</div>`
+            : `<a class="addcur" style="display:block;text-align:center;text-decoration:none" href="atmosfera.apk">Скачать приложение для Android</a><div class="snote">В приложении есть виджет на рабочий стол и уведомления о дожде и опасной погоде.</div>`}
+    <div class="snote">Данные: Open-Meteo (ECMWF, GFS, ICON), NASA GIBS, RainViewer, NOAA SWPC, OpenStreetMap.</div>`;
+  $("#setClose").onclick = closeSettings;
+  box.querySelectorAll('[aria-label="Оформление"] button').forEach(b => b.onclick = () => { settings.theme = b.dataset.v; saveSettings(); applyTheme(); renderSettings(); });
+  box.querySelectorAll('[aria-label="Градусы"] button').forEach(b => b.onclick = () => { if(units !== b.dataset.v) $("#units").click(); renderSettings(); });
+  $("#setPeek").onchange = e => { settings.peek = e.target.checked; saveSettings(); peekUpdate(true); };
+  $("#setNotify").onchange = e => {
+    if(e.target.checked && !favs.length){ e.target.checked = false; toast("Сначала сохраните главный город: откройте его и нажмите «Сохранить город»."); return; }
+    settings.notify = e.target.checked; saveSettings(); toast(settings.notify ? `Уведомления включены для: ${favs[0].name}` : "Уведомления выключены");
+  };
+}
+function closeSettings(){ $("#settings").hidden = true; $("#settingsBtn").setAttribute("aria-expanded","false"); }
+$("#settingsBtn").onclick = e => { e.stopPropagation(); const b=$("#settings"); if(b.hidden){ b.hidden=false; $("#settingsBtn").setAttribute("aria-expanded","true"); renderSettings(); } else closeSettings(); };
+document.addEventListener("click", e => { if(!$("#settings").hidden && e.target.isConnected && !e.target.closest("#settings,#settingsBtn")) closeSettings(); });
+
+/* ================= «под прицелом»: weather at the centre of the screen ================= */
+const peek = {data:null, key:"", timer:null, last:0, seq:0, cache:new Map()};
+function peekAllowed(){ return settings.peek && !wx.active && ($("#sheet").hidden || $("#sheet").classList.contains("min")); }
+function peekHide(){ $("#peek").hidden = true; $("#reticle").hidden = true; if(peek.data){ peek.data = null; sound.update(); } }
+function peekUpdate(force){
+  clearTimeout(peek.timer);
+  if(!peekAllowed()){ $("#peek").hidden = true; $("#reticle").hidden = true; return; }
+  $("#reticle").hidden = false;
+  const wait = spinning && !force ? Math.max(0, 6000 - (Date.now()-peek.last)) : 450;
+  peek.timer = setTimeout(peekLoad, wait);
+}
+async function peekLoad(){
+  if(!peekAllowed()) return;
+  const c = map.getCenter(), z = map.getZoom(), lat = c.lat, lon = ((c.lng+540)%360)-180;
+  const step = z < 3 ? 1 : z < 6 ? 0.25 : 0.05, key = (Math.round(lat/step)*step).toFixed(2)+","+(Math.round(lon/step)*step).toFixed(2);
+  if(key === peek.key && peek.data){ $("#peek").hidden = false; $("#peek").classList.remove("loading"); renderPeek(); sound.update(); return; }
+  peek.key = key; peek.last = Date.now(); const seq = ++peek.seq;
+  $("#peek").hidden = false; $("#peek").classList.add("loading");
+  try{
+    let hit = peek.cache.get(key);
+    if(!hit || Date.now()-hit.at > 10*60*1000){
+      const [w, n] = await Promise.all([
+        getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,apparent_temperature,weather_code,is_day,precipitation,snowfall,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl&hourly=temperature_2m,weather_code,is_day,precipitation&minutely_15=precipitation,snowfall&forecast_minutely_15=32&past_minutely_15=1&forecast_hours=8&timezone=auto&wind_speed_unit=ms`, 12000, 2),
+        reverseName(lat, lon)
+      ]);
+      hit = {at:Date.now(), w, n, lat, lon}; peek.cache.set(key, hit);
+      if(peek.cache.size > 60) peek.cache.delete(peek.cache.keys().next().value);
+    }
+    if(seq !== peek.seq || !peekAllowed()) return;
+    peek.data = hit; renderPeek(); sound.update();
+  }catch(e){ if(seq === peek.seq){ $("#peek").classList.remove("loading"); $("#peekBody").textContent = "Не удалось загрузить погоду для этого места"; } }
+}
+function renderPeek(){
+  const {w, n} = peek.data, c = w.current, h = w.hourly;
+  const nc = w.minutely_15 ? nowcast(w).text.replace("Ближайшие сутки без осадков","В ближайшие часы без осадков") : "";
+  const i0 = Math.max(0, h.time.findIndex(t => t >= c.time.slice(0,13)+":00"));
+  const hours = [1,2,3,4,5,6].map(k => i0+k).filter(i => i < h.time.length)
+    .map(i => `<span class="ph"><small>${h.time[i].slice(11,16)}</small>${icon(h.weather_code[i], h.is_day[i], 22)}<b>${Tu(h.temperature_2m[i])}</b></span>`).join("");
+  $("#peek").classList.remove("loading");
+  $("#peekBody").innerHTML = `
+    <div class="pk-top">${icon(c.weather_code, c.is_day, 42)}
+      <div class="pk-name"><b>${esc(n.name)}</b><small>${esc(n.sub || "")}${n.sub?" · ":""}${fmtTime(c.time)} местное</small></div>
+      <div class="pk-t">${Tu(c.temperature_2m)}</div></div>
+    <div class="pk-desc">${esc((WMO[c.weather_code]||["—"])[0])} · ощущается ${Tu(c.apparent_temperature)} · ветер ${c.wind_speed_10m.toFixed(0)} м/с · ${Math.round(c.pressure_msl*0.750062)} мм</div>
+    ${nc ? `<div class="pk-nc">${esc(nc)}</div>` : ""}
+    <div class="pk-hours">${hours}</div>`;
+}
+$("#peek").onclick = () => { if(!peek.data) return; const d = peek.data; openPlace(d.lat, d.lon, {name:d.n.name, sub:d.n.sub, zoom: Math.max(map.getZoom(), 5)}); };
+map.on("moveend", () => peekUpdate(false));
+map.on("movestart", () => { if(!spinning) $("#peek").classList.add("loading"); });
+
+/* ================= month forecast ================= */
+async function showMonth(){
+  const w = current?.wx; if(!w) return;
+  const token = current, body = $("#body");
+  body.innerHTML = `<div class="mhead"><button class="qbtn" id="mBack">← Назад</button><b>Прогноз на месяц</b></div><div class="loading">Считаю прогноз на 35 дней…</div>`;
+  $("#mBack").onclick = () => renderWeather();
+  body.scrollTop = 0;
+  let ens = null;
+  try{ ens = await getJSON(`https://ensemble-api.open-meteo.com/v1/ensemble?latitude=${current.lat}&longitude=${current.lon}&models=gfs05&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=35&timezone=auto`, 20000, 2); }
+  catch(e){ ens = null; }
+  if(current !== token || !$("#mBack")) return;
+  const d = w.daily, days = [];
+  d.time.forEach((t,i) => days.push({t, code:d.weather_code[i], hi:d.temperature_2m_max[i], lo:d.temperature_2m_min[i], p:d.precipitation_sum[i]||0, prob:d.precipitation_probability_max[i], approx:false}));
+  if(ens?.daily){
+    const e = ens.daily, mean = (base, i) => { let s=0, n=0; for(const k in e) if(k===base || k.startsWith(base+"_member")){ const v=e[k][i]; if(v!=null){ s+=v; n++; } } return n ? s/n : null; };
+    const wetShare = i => { let wet=0, n=0; for(const k in e) if(k==="precipitation_sum" || k.startsWith("precipitation_sum_member")){ const v=e[k][i]; if(v!=null){ n++; if(v>=1) wet++; } } return n ? Math.round(wet/n*100) : null; };
+    e.time.forEach((t,i) => {
+      if(t <= days[days.length-1].t) return;
+      const hi = mean("temperature_2m_max", i), lo = mean("temperature_2m_min", i), prob = wetShare(i), p = mean("precipitation_sum", i)||0;
+      const snow = hi!=null && hi < 1;
+      const code = prob>=60 ? (snow?73:63) : prob>=35 ? (snow?71:61) : prob>=20 ? 3 : 2;
+      days.push({t, code, hi, lo, p, prob, approx:true});
+    });
+  }
+  const first = new Date(days[0].t+"T12:00:00"), lead = (first.getDay()+6)%7;
+  const cells = Array(lead).fill(`<div class="mc blank"></div>`).concat(days.map(x => {
+    const dt = new Date(x.t+"T12:00:00");
+    return `<div class="mc${x.approx?" approx":""}${dt.getDay()%6===0?" we":""}" title="${esc((WMO[x.code]||["—"])[0])}${x.prob!=null?`, осадки ${x.prob}%`:""}">
+      <span class="md">${dt.getDate()}${dt.getDate()===1||x===days[0]?` <small>${MON[dt.getMonth()]}</small>`:""}</span>
+      ${icon(x.code, 1, 24)}
+      <b>${Tu(x.hi)}</b><small>${Tu(x.lo)}</small>
+      ${x.prob!=null ? `<i class="mp" style="width:${clamp(x.prob,0,100)}%"></i>` : ""}
+    </div>`;
+  }));
+  const hiDay = days.reduce((a,b)=> (b.hi??-99) > (a.hi??-99) ? b : a), loDay = days.reduce((a,b)=> (b.lo??99) < (a.lo??99) ? b : a);
+  const wet = days.filter(x => (x.prob??0) >= 50 || x.p >= 2).length;
+  const fmtD = t => { const dt = new Date(t+"T12:00:00"); return `${dt.getDate()} ${MON[dt.getMonth()]}`; };
+  body.innerHTML = `<div class="mhead"><button class="qbtn" id="mBack">← Назад</button><b>Прогноз на ${days.length} дней</b></div>
+    <div class="answer"><b>Коротко о месяце</b>Самый тёплый день — ${fmtD(hiDay.t)} (до ${Tu(hiDay.hi)}), самый холодный — ${fmtD(loDay.t)} (до ${Tu(loDay.lo)}). Дней с осадками: около ${wet}.</div>
+    <div class="mgrid" role="grid">${["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(x=>`<div class="mw">${x}</div>`).join("")}${cells.join("")}</div>
+    <div class="snote">Полоска внизу дня — вероятность осадков. Первые ${d.time.length} дней — основной прогноз; дальше (бледные клетки) — ориентировочно, по 31 варианту модели GFS${ens?"":" (сейчас недоступно)"}.</div>`;
+  $("#mBack").onclick = () => renderWeather();
+}
+
 /* ================= globe controls ================= */
 let spinning = store.get("spin", true), userBusy=false;
 function spinStep(){
@@ -1538,10 +1744,10 @@ $("#spin").setAttribute("aria-pressed", spinning);
 $("#spin").onclick = () => { spinning=!spinning; $("#spin").setAttribute("aria-pressed",spinning); store.set("spin",spinning); if(spinning) spinStep(); };
 $("#home").onclick = () => { if(wx.active) closeWx(true); map.flyTo({zoom: innerWidth<760?0.9:1.6, pitch:0, bearing:0, duration:1500, padding:{top:0,bottom:0,left:0,right:0}}); };
 $("#units").textContent = "°"+units;
-$("#units").onclick = () => { units = units==="C"?"F":"C"; store.set("units",units); $("#units").textContent="°"+units; if(current?.wx) renderWeather(); if(on.temps) showTemps(); };
+$("#units").onclick = () => { units = units==="C"?"F":"C"; store.set("units",units); syncApp(); if(peek.data) renderPeek(); $("#units").textContent="°"+units; if(current?.wx) renderWeather(); if(on.temps) showTemps(); };
 
-$("#close").onclick = () => { $("#sheet").hidden=true; document.body.classList.remove("sheet-open","sheet-min"); if(pin){pin.remove();pin=null;} current=null; sound.update(); map.easeTo({padding:{top:0,bottom:0,left:0,right:0}, duration:500}); };
-$("#grab").onclick = () => { const s=$("#sheet"); s.classList.toggle("min"); document.body.classList.toggle("sheet-min", s.classList.contains("min")); };
+$("#close").onclick = () => { $("#sheet").hidden=true; document.body.classList.remove("sheet-open","sheet-min"); if(pin){pin.remove();pin=null;} current=null; sound.update(); map.easeTo({padding:{top:0,bottom:0,left:0,right:0}, duration:500}); setTimeout(()=>peekUpdate(true), 600); };
+$("#grab").onclick = () => { const s=$("#sheet"); s.classList.toggle("min"); document.body.classList.toggle("sheet-min", s.classList.contains("min")); peekUpdate(true); };
 
 map.on("click", e => { if(wx.active) return; openPlace(e.lngLat.lat, e.lngLat.lng); });
 map.on("moveend", () => { const c=map.getCenter(); store.set("center",[+c.lng.toFixed(2), +c.lat.toFixed(2)]); });
@@ -1551,6 +1757,8 @@ if(window.ResizeObserver) new ResizeObserver(() => { if(!$("#wxpanel").hidden) d
 window.atmBack = () => {
   if(!$("#results").hidden){ hideResults(); return true; }
   if(!$("#cities").hidden){ closeCities(); return true; }
+  if(!$("#settings").hidden){ closeSettings(); return true; }
+  if($("#mBack")){ renderWeather(); return true; }
   if(!$("#layers").hidden){ $("#layers").hidden = true; $("#layersBtn").setAttribute("aria-expanded","false"); return true; }
   if(wx.active){ closeWx(false); return true; }
   if(!$("#sheet").hidden){ $("#close").click(); return true; }
@@ -1559,7 +1767,8 @@ window.atmBack = () => {
 addEventListener("keydown", e => { if(e.key==="Escape"){ if(wx.active) closeWx(false); else if(!$("#sheet").hidden) $("#close").click(); } });
 
 map.on("load", () => {
-  buildMapLayers(); renderLayerUI(); renderFavs();
+  buildMapLayers(); renderLayerUI(); renderFavs(); syncApp();
+  if(!favs.length) setTimeout(() => peekUpdate(true), 1200);
   if(favs.length){ const f = favs[0]; setTimeout(() => openPlace(f.lat, f.lon, {name:f.name, sub:f.sub, zoom:6}), 500); }
   else if(spinning) setTimeout(spinStep, 800);
   setTimeout(()=>{ $("#hint").style.opacity=0; }, 9000);

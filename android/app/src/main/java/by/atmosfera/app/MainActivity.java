@@ -11,6 +11,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
+import android.view.WindowInsetsController;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -23,6 +25,7 @@ public class MainActivity extends Activity {
     private static final String HOME = "https://ravettikeney-sudo.github.io/atmosfera/";
     private static final String HOST = "ravettikeney-sudo.github.io";
     private static final int REQ_LOCATION = 7;
+    private static final int REQ_NOTIFY = 8;
 
     private WebView web;
     private String geoOrigin;
@@ -48,7 +51,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.0");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.1");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -74,8 +77,50 @@ public class MainActivity extends Activity {
             }
         });
 
+        web.addJavascriptInterface(new Bridge(), "AtmApp");
+        Weather.ensureChannel(this);
+        if (Weather.prefs(this).getBoolean("notify", false)) Weather.schedule(this);
+
         if (state != null) web.restoreState(state);
         else web.loadUrl(HOME);
+    }
+
+    /** Called from the web page: which city the widget and notifications follow, units, notifications on/off, theme. */
+    private class Bridge {
+        @JavascriptInterface public void setHome(String json) {
+            String old = Weather.prefs(MainActivity.this).getString("home", "");
+            Weather.prefs(MainActivity.this).edit().putString("home", json).apply();
+            if (!json.equals(old)) Weather.refreshAsync(MainActivity.this, false);
+        }
+        @JavascriptInterface public void setUnits(String u) {
+            String old = Weather.prefs(MainActivity.this).getString("units", "C");
+            Weather.prefs(MainActivity.this).edit().putString("units", u).apply();
+            if (!u.equals(old)) Weather.refreshAsync(MainActivity.this, false);
+        }
+        @JavascriptInterface public void setNotify(boolean on) {
+            boolean was = Weather.prefs(MainActivity.this).getBoolean("notify", false);
+            Weather.prefs(MainActivity.this).edit().putBoolean("notify", on).apply();
+            if (on) {
+                Weather.schedule(MainActivity.this);
+                if (!was && Build.VERSION.SDK_INT >= 33 && !Weather.canNotify(MainActivity.this))
+                    runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY));
+            }
+        }
+        @JavascriptInterface public void setTheme(String t) {
+            runOnUiThread(() -> {
+                boolean light = "light".equals(t);
+                int bg = light ? Color.parseColor("#eef3f9") : Color.parseColor("#05070d");
+                getWindow().setStatusBarColor(bg);
+                getWindow().setNavigationBarColor(bg);
+                if (Build.VERSION.SDK_INT >= 30) {
+                    WindowInsetsController c = getWindow().getInsetsController();
+                    if (c != null) c.setSystemBarsAppearance(light ? (WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS) : 0,
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+                } else {
+                    getWindow().getDecorView().setSystemUiVisibility(light ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0);
+                }
+            });
+        }
     }
 
     private boolean hasLocation() {
@@ -85,6 +130,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        if (code == REQ_NOTIFY && !Weather.canNotify(this)) {
+            web.evaluateJavascript("toast('Уведомления запрещены. Разрешите их в настройках Android: Приложения → Атмосфера → Уведомления.')", null);
+        }
         if (code == REQ_LOCATION && geoCallback != null) {
             geoCallback.invoke(geoOrigin, hasLocation(), false);
             geoCallback = null;
@@ -110,7 +158,7 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
-    @Override protected void onPause() { super.onPause(); web.onPause(); }
+    @Override protected void onPause() { super.onPause(); web.onPause(); Weather.refreshAsync(this, false); }
     @Override protected void onResume() { super.onResume(); web.onResume(); }
     @Override protected void onDestroy() { web.destroy(); super.onDestroy(); }
 }

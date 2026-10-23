@@ -36,7 +36,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         web = new WebView(this);
-        web.setBackgroundColor(Color.parseColor("#05070d"));
+        web.setBackgroundColor(Color.parseColor("#14234a"));
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         setContentView(web);
 
@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.1");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.2");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void setTheme(String t) {
             runOnUiThread(() -> {
                 boolean light = "light".equals(t);
-                int bg = light ? Color.parseColor("#eef3f9") : Color.parseColor("#05070d");
+                int bg = light ? Color.parseColor("#eef3f9") : Color.parseColor("#14234a");
                 getWindow().setStatusBarColor(bg);
                 getWindow().setNavigationBarColor(bg);
                 if (Build.VERSION.SDK_INT >= 30) {
@@ -141,10 +141,10 @@ public class MainActivity extends Activity {
 
     private void showOffline() {
         String html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-            + "<body style='margin:0;background:#05070d;color:#e8eef8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center'>"
+            + "<body style='margin:0;background:#14234a;color:#e8eef8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center'>"
             + "<div style='padding:24px'><h2 style='font-weight:700'>Нет подключения к интернету</h2>"
             + "<p style='color:#8fa0b8'>Погоде нужен интернет. Проверьте Wi-Fi или мобильные данные.</p>"
-            + "<button onclick=\"location.href='" + HOME + "'\" style='margin-top:12px;padding:12px 22px;border:0;border-radius:999px;background:#7cc4ff;color:#05070d;font-size:16px;font-weight:600'>Повторить</button></div></body></html>";
+            + "<button onclick=\"location.href='" + HOME + "'\" style='margin-top:12px;padding:12px 22px;border:0;border-radius:999px;background:#7cc4ff;color:#14234a;font-size:16px;font-weight:600'>Повторить</button></div></body></html>";
         web.loadDataWithBaseURL(HOME, html, "text/html", "utf-8", HOME);
     }
 

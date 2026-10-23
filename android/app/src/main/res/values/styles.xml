@@ -6,5 +6,5 @@
         <item name="android:navigationBarColor">@color/space</item>
         <item name="android:colorAccent">#7cc4ff</item>
     </style>
-    <color name="space">#05070d</color>
+    <color name="space">#14234a</color>
 </resources>

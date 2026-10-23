@@ -249,7 +249,7 @@ final class Weather {
     private static String get(String u) throws Exception {
         HttpURLConnection con = (HttpURLConnection) new URL(u).openConnection();
         con.setConnectTimeout(15000); con.setReadTimeout(15000);
-        con.setRequestProperty("User-Agent", "AtmosferaApp/1.1");
+        con.setRequestProperty("User-Agent", "AtmosferaApp/1.2");
         try (BufferedReader r = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"))) {
             StringBuilder sb = new StringBuilder(); String line;
             while ((line = r.readLine()) != null) sb.append(line);

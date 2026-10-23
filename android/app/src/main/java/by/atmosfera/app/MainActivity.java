@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.2");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.3");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -79,6 +79,7 @@ public class MainActivity extends Activity {
 
         web.addJavascriptInterface(new Bridge(), "AtmApp");
         Weather.ensureChannel(this);
+        Updater.check(this);
         if (Weather.prefs(this).getBoolean("notify", false)) Weather.schedule(this);
 
         if (state != null) web.restoreState(state);
@@ -159,6 +160,6 @@ public class MainActivity extends Activity {
 
     @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
     @Override protected void onPause() { super.onPause(); web.onPause(); Weather.refreshAsync(this, false); }
-    @Override protected void onResume() { super.onResume(); web.onResume(); }
+    @Override protected void onResume() { super.onResume(); web.onResume(); Updater.resume(this); }
     @Override protected void onDestroy() { web.destroy(); super.onDestroy(); }
 }

@@ -279,6 +279,20 @@ button{max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .ph b{font:600 13px var(--mono)}
 body.sheet-open:not(.sheet-min) .peek{display:none}
 .mhead{display:flex;align-items:center;gap:12px;padding:14px 0 6px}
+.cmpq{position:relative;margin:8px 0}
+.cmpq input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--raise);padding:0 14px;outline:none}
+.cmpq input:focus{border-color:var(--ice)}
+.cmpres{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.cmpres button{text-align:left;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--raise)}
+.cmpres small{display:block;color:var(--muted)}
+.cmp{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin-top:8px}
+.cmp th{font:700 14px var(--body);text-align:right;padding:6px 4px;overflow-wrap:anywhere}
+.cmp th:first-child,.cmp td:first-child{text-align:left;color:var(--muted);font-weight:500;font-size:13px}
+.cmp td{padding:7px 4px;text-align:right;border-top:1px solid var(--line);font-weight:600}
+.cmp .win{color:var(--sun)}
+.cmpdays{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;align-items:center;margin-top:12px;font-variant-numeric:tabular-nums}
+.cmpdays .dh{color:var(--muted);font-size:12px}
+.cmpdays span{display:flex;align-items:center;gap:6px;justify-content:flex-end;font-weight:600}
 .mhead b{font:700 16px var(--display)}
 .mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px}
 .mw{text-align:center;font:600 11px var(--body);color:var(--muted);padding-bottom:2px}
@@ -988,6 +1002,7 @@ function renderWeather(){
     <button class="qbtn" id="qCar">Когда мыть машину?</button>
     <button class="qbtn" id="qWear">Как одеться?</button>
     <button class="qbtn" id="qMonth">Прогноз на месяц</button>
+    <button class="qbtn" id="qCompare">Сравнить с городом</button>
     <button class="qbtn" id="qShare">Поделиться</button>
   </div>
   <div class="answer" id="answer" hidden></div>
@@ -1068,6 +1083,7 @@ function renderWeather(){
   $("#qCar").onclick = () => answer(carWashText(w));
   $("#qWear").onclick = () => answer(wearText(w));
   $("#qShare").onclick = () => shareForecast(w);
+  $("#qCompare").onclick = () => showCompare();
   $("#qMonth").onclick = $("#qMonth2").onclick = () => showMonth();
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
     hourMode = b.dataset.mode; store.set("hourMode", hourMode);
@@ -1192,7 +1208,16 @@ function moon(date){
   const syn = 29.530588853, ref = Date.UTC(2000,0,6,18,14);
   const age = (((date - ref)/864e5) % syn + syn) % syn, f = age/syn;
   const names = ["Новолуние","Растущий серп","Первая четверть","Растущая луна","Полнолуние","Убывающая луна","Последняя четверть","Убывающий серп"];
-  return {name: names[Math.floor(f*8+0.5)%8], illum: Math.round((1-Math.cos(2*Math.PI*f))/2*100), daysToFull: ((0.5 - f + 1) % 1)*syn};
+  return {name: names[Math.floor(f*8+0.5)%8], illum: Math.round((1-Math.cos(2*Math.PI*f))/2*100), daysToFull: ((0.5 - f + 1) % 1)*syn, f};
+}
+/* small picture of the moon's phase; lit side on the right while waxing (northern hemisphere view) */
+function moonSVG(f, size=22, south=false){
+  const k = (1-Math.cos(2*Math.PI*f))/2, r = 10, waxing = f < 0.5, rx = Math.abs(2*k-1)*r;
+  const litRight = waxing !== south;
+  const outer = litRight ? 1 : 0, inner = (k > 0.5) === litRight ? 1 : 0;
+  const lit = k < 0.01 ? "" : k > 0.99 ? `<circle cx="12" cy="12" r="${r}" fill="#f4ecd0"/>`
+    : `<path d="M12 2 A${r} ${r} 0 0 ${outer} 12 22 A${rx.toFixed(2)} ${r} 0 0 ${inner} 12 2Z" fill="#f4ecd0"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-4px;margin-right:6px"><circle cx="12" cy="12" r="${r}" fill="#3a4466"/>${lit}<circle cx="12" cy="12" r="${r}" fill="none" stroke="rgba(255,255,255,.25)"/></svg>`;
 }
 let kpCache = null;
 async function getKp(){
@@ -1792,6 +1817,7 @@ function syncApp(){
     window.AtmApp.setHome(JSON.stringify(f ? {lat:f.lat, lon:f.lon, name:f.name} : null));
     window.AtmApp.setUnits(units);
     window.AtmApp.setNotify(!!settings.notify);
+    if(window.AtmApp.setMorning) window.AtmApp.setMorning(!!settings.morning, settings.morningAt || "07:00");
   }catch(e){}
 }
 function seg(name, opts, val){ return `<div class="segm" role="radiogroup" aria-label="${name}">${opts.map(([v,l])=>`<button role="radio" data-v="${v}" aria-checked="${v===val}">${l}</button>`).join("")}</div>`; }
@@ -1802,13 +1828,20 @@ function renderSettings(){
     <div class="srow"><span>Градусы</span>${seg("Градусы",[["C","°C"],["F","°F"]],units)}</div>
     <label class="srow sw"><span>Погода в центре экрана<small>Крутите глобус — карточка покажет погоду места под прицелом</small></span><input type="checkbox" id="setPeek" ${settings.peek?"checked":""}></label>
     <label class="srow sw"><span>Уведомления о дожде и опасной погоде<small>${inApp ? (favs.length ? `Для главного города: ${esc(favs[0].name)}` : "Сначала сохраните главный город в «Моих городах»") : "Работают в Android-приложении"}</small></span><input type="checkbox" id="setNotify" ${settings.notify?"checked":""} ${inApp?"":"disabled"}></label>
-    ${inApp ? `<div class="snote">Виджет: долго нажмите на пустое место рабочего стола → «Виджеты» → «Атмосфера». Он показывает главный город.</div>`
+    <label class="srow sw"><span>Утренняя сводка<small>${inApp ? `Каждое утро — погода на день одной строкой` : "Работает в Android-приложении"}</small></span>
+      <span style="display:flex;gap:8px;align-items:center"><input type="time" id="setMorningAt" value="${settings.morningAt || "07:00"}" ${inApp?"":"disabled"} style="height:34px;border-radius:9px;border:1px solid var(--line);background:var(--raise);padding:0 6px"><input type="checkbox" id="setMorning" ${settings.morning?"checked":""} ${inApp?"":"disabled"}></span></label>
+    ${inApp ? `<div class="snote">Виджеты: долго нажмите на пустое место рабочего стола → «Виджеты» → «Атмосфера». Есть маленький, средний и большой с почасовым прогнозом. Показывают главный город.</div>`
             : `<a class="addcur" style="display:block;text-align:center;text-decoration:none" href="atmosfera.apk">Скачать приложение для Android</a><div class="snote">В приложении есть виджет на рабочий стол и уведомления о дожде и опасной погоде.</div>`}
     <div class="snote">Данные: Open-Meteo (ECMWF, GFS, ICON), NASA GIBS, RainViewer, NOAA SWPC, OpenStreetMap.</div>`;
   $("#setClose").onclick = closeSettings;
   box.querySelectorAll('[aria-label="Оформление"] button').forEach(b => b.onclick = () => { settings.theme = b.dataset.v; saveSettings(); applyTheme(); renderSettings(); });
   box.querySelectorAll('[aria-label="Градусы"] button').forEach(b => b.onclick = () => { if(units !== b.dataset.v) $("#units").click(); renderSettings(); });
   $("#setPeek").onchange = e => { settings.peek = e.target.checked; saveSettings(); peekUpdate(true); };
+  $("#setMorning").onchange = e => {
+    if(e.target.checked && !favs.length){ e.target.checked = false; toast("Сначала сохраните главный город: откройте его и нажмите «Сохранить город»."); return; }
+    settings.morning = e.target.checked; saveSettings(); toast(settings.morning ? `Утренняя сводка в ${settings.morningAt || "07:00"}` : "Утренняя сводка выключена");
+  };
+  $("#setMorningAt").onchange = e => { settings.morningAt = e.target.value || "07:00"; saveSettings(); if(settings.morning) toast(`Утренняя сводка в ${settings.morningAt}`); };
   $("#setNotify").onchange = e => {
     if(e.target.checked && !favs.length){ e.target.checked = false; toast("Сначала сохраните главный город: откройте его и нажмите «Сохранить город»."); return; }
     settings.notify = e.target.checked; saveSettings(); toast(settings.notify ? `Уведомления включены для: ${favs[0].name}` : "Уведомления выключены");
@@ -2117,7 +2150,7 @@ function skyKind(w){
 }
 
 /* ================= «Ещё»: everyday helpers ================= */
-const KIND = [[/Ветер/,"wind"],[/Давлен/,"press"],[/Влажн/,"hum"],[/Облачн/,"cloud"],[/Осадки/,"rain"],[/УФ/,"uv"],[/Восход/,"sun"],[/гроз/i,"storm"],[/Луна/,"moon"],[/Магнит/,"kp"],[/воды/,"water"],[/Высота/,"geo"],[/PM|Озон|азота|Угарн|Пыль/,"air"],[/Клёв/,"fish"],[/Самочув/,"health"],[/Золот/,"photo"],[/пробеж/i,"run"],[/бель/i,"dry"],[/Огород/,"soil"],[/Снег/,"snow"],[/сияни/i,"aurora"]];
+const KIND = [[/Ветер/,"wind"],[/Давлен/,"press"],[/Влажн/,"hum"],[/Облачн/,"cloud"],[/Осадки/,"rain"],[/УФ/,"uv"],[/Восход/,"sun"],[/гроз/i,"storm"],[/Луна/,"moon"],[/Магнит/,"kp"],[/воды/,"water"],[/Высота/,"geo"],[/PM|Озон|азота|Угарн|Пыль/,"air"],[/Световой/,"sun"],[/Звёздн/,"moon"],[/Самочув/,"health"],[/Золот/,"photo"],[/пробеж/i,"run"],[/бель/i,"dry"],[/Огород/,"soil"],[/Снег/,"snow"],[/сияни/i,"aurora"]];
 function moreCells(w, ex){
   const c = w.current, h = w.hourly, d = w.daily, lat = current.lat, lon = current.lon, out = [];
   const i0 = Math.max(0, h.time.findIndex(t => t >= c.time.slice(0,13)+":00"));
@@ -2125,22 +2158,33 @@ function moreCells(w, ex){
   const mm = p => p*0.750062;
   /* moon */
   const mo = moon(new Date()), mt = SC.moonTimes(localMidnight(w), lat, lon);
-  out.push(cell("Луна", mo.name, `освещена на ${mo.illum}%; восход ${fmtLoc(mt.rise, w)}, заход ${fmtLoc(mt.set, w)}`));
+  out.push(cell("Луна", moonSVG(mo.f, 22, lat < 0) + mo.name, `освещена на ${mo.illum}%; восход ${fmtLoc(mt.rise, w)}, заход ${fmtLoc(mt.set, w)}`));
   /* golden hour */
   const noon = new Date(localMidnight(w).getTime() + 12*3600e3), g = SC.times(noon, lat, lon, 6), s0 = SC.times(noon, lat, lon, -0.833), b = SC.times(noon, lat, lon, -6);
   out.push(isNaN(g.set) || isNaN(s0.set) ? cell("Золотой час для фото", "—", "сейчас полярный день или ночь")
     : cell("Золотой час для фото", `${fmtLoc(g.set, w)}–${fmtLoc(s0.set, w)}`, `вечером; утром ${fmtLoc(s0.rise, w)}–${fmtLoc(g.rise, w)}; синий час до ${fmtLoc(b.set, w)}`));
-  /* fishing */
-  const dp = Math.abs(mm(at(h.pressure_msl, i0+12) - h.pressure_msl[i0])), wind = c.wind_speed_10m, dT = Math.abs(at(h.temperature_2m, i0+12) - h.temperature_2m[i0]);
-  let fish = 4.5; const why = [];
-  if(dp > 4){ fish -= 2; why.push("давление скачет"); } else if(dp > 2){ fish -= 1; why.push("давление меняется"); } else why.push("давление стабильное");
-  if(wind > 8){ fish -= 2; why.push("сильный ветер"); } else if(wind > 5){ fish -= .7; why.push("ветрено"); } else if(wind >= 1){ fish += .3; why.push(`ветер ${wind.toFixed(0)} м/с`); }
-  if(dT > 7){ fish -= 1; why.push("резкая смена температуры"); }
-  if((c.precipitation||0) > 2){ fish -= 1; why.push("сильный дождь"); }
-  if(mo.illum > 92){ fish -= .5; why.push("полнолуние"); }
-  if(c.temperature_2m < -15){ fish -= 1; why.push("сильный мороз"); }
-  fish = clamp(Math.round(fish), 1, 5);
-  out.push(cell("Клёв", `${["","плохой","слабый","средний","хороший","отличный"][fish]} · ${fish} из 5`, why.join(", ")));
+  /* daylight: change since yesterday and time to sunset */
+  {
+    const today = SC.times(noon, lat, lon, -0.833), yday = SC.times(new Date(noon.getTime() - 864e5), lat, lon, -0.833);
+    if(!isNaN(today.set) && !isNaN(yday.set)){
+      const len = (today.set - today.rise)/60000, dl = len - (yday.set - yday.rise)/60000, now = Date.now();
+      const hm = m => `${Math.floor(m/60)} ч ${Math.round(m%60)} мин`;
+      const left = today.set - now, before = today.rise - now;
+      const note = before > 0 ? `до восхода ${hm(before/60000)}` : left > 0 ? `до заката ${hm(left/60000)}` : "солнце уже село";
+      out.push(cell("Световой день", hm(len), `${Math.abs(dl) < 0.5 ? "как вчера" : `${dl > 0 ? "длиннее" : "короче"} вчерашнего на ${Math.abs(dl).toFixed(0)} мин`}; ${note}`));
+    }
+  }
+  /* starry sky tonight: night-time cloud cover and moonlight */
+  {
+    const day = c.time.slice(0,10), next = new Date(Date.parse(day+"T12:00:00Z") + 864e5).toISOString().slice(0,10);
+    let sum = 0, n = 0;
+    h.time.forEach((t, i) => { const hr = +t.slice(11,13); if((t.slice(0,10) === day && hr >= 21) || (t.slice(0,10) === next && hr <= 4)){ sum += at(h.cloud_cover, i) ?? 50; n++; } });
+    if(n){
+      const cc = sum/n, moonBright = mo.illum >= 70;
+      const v = cc < 25 ? (moonBright ? "ясно, но светит луна" : "отличная ночь") : cc < 55 ? "переменная облачность" : "небо закрыто";
+      out.push(cell("Звёздное небо", v, `облачность ночью ${Math.round(cc)}%; луна освещена на ${mo.illum}%${cc < 25 && !moonBright ? " — видно Млечный Путь вдали от города" : ""}`));
+    }
+  }
   /* well-being for weather-sensitive people */
   const dp24 = mm(at(h.pressure_msl, i0+24) - h.pressure_msl[i0]), kpv = kpSummary(ex?.kp), kpN = kpv ? +(kpv.note.match(/[\d,]+/)?.[0]||"0").replace(",",".") : 0;
   const yT = ex?.yday?.hourly ? (() => { const y = ex.yday.hourly, k = y.time.findIndex(t => t.slice(11,13) === c.time.slice(11,13)); return k >= 0 ? y.temperature_2m[k] : null; })() : null;
@@ -2184,6 +2228,76 @@ function moreCells(w, ex){
     out.push(cell("Северное сияние", chance, `для вашей широты нужен индекс Kp ${need}+, ожидается до ${String(kpN).replace(".",",")}`));
   }
   return out.join("");
+}
+
+/* ================= compare two cities ================= */
+function showCompare(){
+  const A = current; if(!A?.wx) return;
+  const body = $("#body");
+  body.innerHTML = `<div class="mhead"><button class="qbtn" id="mBack">← Назад</button><b>Сравнить ${esc(A.name)}</b></div>
+    <div class="cmpq"><input id="cmpQ" type="search" placeholder="С каким городом сравнить?" autocomplete="off" aria-label="Город для сравнения"></div>
+    <div class="cmpres" id="cmpRes">${favs.filter(f => keyOf(f) !== keyOf(A)).slice(0,6).map((f,i)=>`<button data-fav="${i}">${esc(f.name)}<small>из моих городов</small></button>`).join("")}</div>`;
+  body.scrollTop = 0;
+  $("#mBack").onclick = () => renderWeather();
+  const others = favs.filter(f => keyOf(f) !== keyOf(A));
+  body.querySelectorAll("[data-fav]").forEach(b => b.onclick = () => { const f = others[+b.dataset.fav]; runCompare(A, {lat:f.lat, lon:f.lon, name:f.name, sub:f.sub}); });
+  let tm = null, seq = 0;
+  $("#cmpQ").oninput = e => {
+    clearTimeout(tm); const q = e.target.value.trim(); if(q.length < 2) return;
+    tm = setTimeout(async () => {
+      const my = ++seq;
+      try{
+        const d = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=ru&format=json`, 10000);
+        if(my !== seq) return;
+        const items = d.results || [];
+        $("#cmpRes").innerHTML = items.length ? items.map((it,i)=>`<button data-i="${i}">${esc(it.name)}<small>${esc([it.admin1, it.country].filter(Boolean).join(", "))}</small></button>`).join("") : `<div class="snote">Ничего не найдено. Попробуйте другое написание.</div>`;
+        $("#cmpRes").querySelectorAll("[data-i]").forEach(b => b.onclick = () => { const it = items[+b.dataset.i]; runCompare(A, {lat:it.latitude, lon:it.longitude, name:it.name, sub:[it.admin1, it.country].filter(Boolean).join(", ")}); });
+      }catch(err){ $("#cmpRes").innerHTML = `<div class="snote">Поиск не ответил. Попробуйте ещё раз.</div>`; }
+    }, 300);
+  };
+  setTimeout(() => $("#cmpQ")?.focus(), 50);
+}
+async function runCompare(A, B){
+  const body = $("#body");
+  body.innerHTML = `<div class="mhead"><button class="qbtn" id="mBack">← Назад</button><b>${esc(A.name)} и ${esc(B.name)}</b></div><div class="loading">Загружаю погоду…</div>`;
+  $("#mBack").onclick = () => showCompare();
+  let wb;
+  try{ wb = await fetchWeather(B.lat, B.lon); }catch(e){ body.querySelector(".loading").textContent = "Не удалось загрузить погоду второго города. Попробуйте ещё раз."; return; }
+  if(!$("#mBack")) return;
+  const wa = A.wx, a = wa.current, b = wb.current;
+  const row = (label, va, vb, fmt, better) => {
+    const wa_ = better ? better(va, vb) : 0;
+    return `<tr><td>${label}</td><td class="${wa_ > 0 ? "win" : ""}">${fmt(va)}</td><td class="${wa_ < 0 ? "win" : ""}">${fmt(vb)}</td></tr>`;
+  };
+  const comfy = (x, y) => Math.sign(Math.abs(y - 20) - Math.abs(x - 20));
+  const less = (x, y) => Math.sign(y - x);
+  const T_ = v => `<span ${tcs(v)}>${Tu(v)}</span>`;
+  const desc = w => (WMO[w.current.weather_code]||["—"])[0];
+  let html = `<div class="mhead"><button class="qbtn" id="mBack">← Назад</button><b>Сравнение</b></div>
+  <table class="cmp"><thead><tr><th></th><th>${esc(A.name)}</th><th>${esc(B.name)}</th></tr></thead><tbody>
+    <tr><td>Сейчас</td><td>${icon(a.weather_code, a.is_day, 30)}</td><td>${icon(b.weather_code, b.is_day, 30)}</td></tr>
+    <tr><td></td><td style="font-weight:500;font-size:13px">${esc(desc(wa))}</td><td style="font-weight:500;font-size:13px">${esc(desc(wb))}</td></tr>
+    ${row("Температура", a.temperature_2m, b.temperature_2m, T_, comfy)}
+    ${row("Ощущается", a.apparent_temperature, b.apparent_temperature, T_, comfy)}
+    ${row("Ветер, м/с", a.wind_speed_10m, b.wind_speed_10m, v => v.toFixed(1), less)}
+    ${row("Порывы, м/с", a.wind_gusts_10m, b.wind_gusts_10m, v => v.toFixed(0), less)}
+    ${row("Влажность", a.relative_humidity_2m, b.relative_humidity_2m, v => v+"%", null)}
+    ${row("Давление, мм", a.pressure_msl*0.750062, b.pressure_msl*0.750062, v => Math.round(v), null)}
+    ${row("Облачность", a.cloud_cover, b.cloud_cover, v => v+"%", less)}
+    ${row("Осадки сегодня, мм", wa.daily.precipitation_sum[0]||0, wb.daily.precipitation_sum[0]||0, v => v.toFixed(1), less)}
+    ${row("Местное время", 0, 0, () => "", null).replace(/<td class="">(.*?)<\/td><td class="">(.*?)<\/td>/, `<td>${fmtTime(a.time)}</td><td>${fmtTime(b.time)}</td>`)}
+  </tbody></table>
+  <div class="cmpdays"><span class="dh" style="justify-content:flex-start">7 дней</span><span class="dh">${esc(A.name)}</span><span class="dh">${esc(B.name)}</span>`;
+  for(let i = 0; i < 7 && i < wa.daily.time.length && i < wb.daily.time.length; i++){
+    const dt = new Date(wa.daily.time[i]+"T12:00:00");
+    const cellD = (w) => `<span>${icon(w.daily.weather_code[i], 1, 22)}<span ${tcs(w.daily.temperature_2m_min[i])}>${Tu(w.daily.temperature_2m_min[i])}</span>…<span ${tcs(w.daily.temperature_2m_max[i])}>${Tu(w.daily.temperature_2m_max[i])}</span></span>`;
+    html += `<span class="dh" style="justify-content:flex-start">${i===0?"Сегодня":i===1?"Завтра":DOW[dt.getDay()]+", "+dt.getDate()}</span>${cellD(wa)}${cellD(wb)}`;
+  }
+  html += `</div><div class="snote">Жёлтым выделено, где погода приятнее: температура ближе к +20°, ветер слабее, меньше облаков и осадков.</div>
+  <button class="qbtn" id="cmpOpen" style="width:100%;margin-top:10px">Открыть ${esc(B.name)}</button>`;
+  body.innerHTML = html; body.scrollTop = 0;
+  $("#mBack").onclick = () => showCompare();
+  $("#cmpOpen").onclick = () => openPlace(B.lat, B.lon, {name:B.name, sub:B.sub, zoom:6});
 }
 
 /* ================= this day in history ================= */

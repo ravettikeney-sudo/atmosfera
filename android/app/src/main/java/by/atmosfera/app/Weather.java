@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -24,6 +25,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -64,7 +66,7 @@ final class Weather {
             String url = String.format(Locale.US,
                 "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
                 + "&current=temperature_2m,apparent_temperature,weather_code,is_day,precipitation,wind_speed_10m"
-                + "&hourly=temperature_2m,precipitation,snowfall,weather_code,wind_gusts_10m"
+                + "&hourly=temperature_2m,precipitation,snowfall,weather_code,wind_gusts_10m,is_day"
                 + "&minutely_15=precipitation,snowfall&forecast_minutely_15=12"
                 + "&daily=temperature_2m_max,temperature_2m_min&forecast_days=2&forecast_hours=14"
                 + "&timezone=auto&wind_speed_unit=ms", lat, lon);
@@ -81,20 +83,31 @@ final class Weather {
                 + " · обновлено " + new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
             String rain = rainStory(w);
 
-            RemoteViews v = views(c);
-            v.setTextViewText(R.id.w_city, name);
-            v.setTextViewText(R.id.w_temp, temp);
-            v.setTextViewText(R.id.w_desc, desc);
-            v.setTextViewText(R.id.w_range, range);
-            v.setTextViewText(R.id.w_now, rain.isEmpty() ? "Ближайшие 3 часа без осадков" : rain);
-            v.setImageViewResource(R.id.w_icon, iconFor(code, day));
-            push(c, v);
+            String now = rain.isEmpty() ? "Ближайшие 3 часа без осадков" : rain;
+            for (int layout : new int[]{R.layout.widget_weather, R.layout.widget_large}) {
+                RemoteViews v = views(c, layout);
+                v.setTextViewText(R.id.w_city, name);
+                v.setTextViewText(R.id.w_temp, temp);
+                v.setTextViewText(R.id.w_desc, desc);
+                v.setTextViewText(R.id.w_range, range);
+                v.setTextViewText(R.id.w_now, now);
+                v.setImageViewResource(R.id.w_icon, iconFor(code, day));
+                if (layout == R.layout.widget_large) fillHours(v, w, f);
+                push(c, layout == R.layout.widget_large ? WeatherWidgetLarge.class : WeatherWidget.class, v);
+            }
+            RemoteViews sm = views(c, R.layout.widget_small);
+            sm.setTextViewText(R.id.w_city, name);
+            sm.setTextViewText(R.id.w_temp, temp);
+            sm.setImageViewResource(R.id.w_icon, iconFor(code, day));
+            push(c, WeatherWidgetSmall.class, sm);
 
             if (allowNotify && p.getBoolean("notify", false) && canNotify(c)) notifyIfNeeded(c, p, w, name, rain);
         } catch (Exception e) {
-            RemoteViews v = views(c);
-            v.setTextViewText(R.id.w_now, "Нет связи — обновлю позже");
-            push(c, v);
+            for (int layout : new int[]{R.layout.widget_weather, R.layout.widget_large}) {
+                RemoteViews v = views(c, layout);
+                v.setTextViewText(R.id.w_now, "Нет связи — обновлю позже");
+                push(c, layout == R.layout.widget_large ? WeatherWidgetLarge.class : WeatherWidget.class, v);
+            }
         }
     }
 
@@ -183,17 +196,103 @@ final class Weather {
     }
 
     /* ---- widget ---- */
-    private static RemoteViews views(Context c) {
-        RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_weather);
+    private static final int[][] HOURS = {
+        {R.id.h0_t, R.id.h0_i, R.id.h0_v}, {R.id.h1_t, R.id.h1_i, R.id.h1_v}, {R.id.h2_t, R.id.h2_i, R.id.h2_v},
+        {R.id.h3_t, R.id.h3_i, R.id.h3_v}, {R.id.h4_t, R.id.h4_i, R.id.h4_v}, {R.id.h5_t, R.id.h5_i, R.id.h5_v}};
+
+    private static void fillHours(RemoteViews v, JSONObject w, boolean f) throws Exception {
+        JSONObject h = w.getJSONObject("hourly");
+        JSONArray t = h.getJSONArray("time"), tmp = h.getJSONArray("temperature_2m"), wc = h.getJSONArray("weather_code"), d = h.optJSONArray("is_day");
+        for (int k = 0; k < HOURS.length; k++) {
+            int i = k + 1;
+            if (i >= t.length()) break;
+            v.setTextViewText(HOURS[k][0], t.getString(i).substring(11, 16));
+            v.setImageViewResource(HOURS[k][1], iconFor(wc.optInt(i, 3), d == null || d.optInt(i, 1) == 1));
+            v.setTextViewText(HOURS[k][2], deg(tmp.optDouble(i, 0), f));
+        }
+    }
+
+    private static RemoteViews views(Context c) { return views(c, R.layout.widget_weather); }
+
+    private static RemoteViews views(Context c, int layout) {
+        RemoteViews v = new RemoteViews(c.getPackageName(), layout);
         PendingIntent pi = PendingIntent.getActivity(c, 1, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         v.setOnClickPendingIntent(R.id.w_root, pi);
         return v;
     }
 
-    private static void push(Context c, RemoteViews v) {
+    private static void push(Context c, RemoteViews v) { push(c, WeatherWidget.class, v); }
+
+    private static void push(Context c, Class<?> cls, RemoteViews v) {
         AppWidgetManager m = AppWidgetManager.getInstance(c);
-        int[] ids = m.getAppWidgetIds(new ComponentName(c, WeatherWidget.class));
+        int[] ids = m.getAppWidgetIds(new ComponentName(c, cls));
         if (ids.length > 0) m.updateAppWidget(ids, v);
+    }
+
+    /* ---- morning summary ---- */
+    static final String MORNING = "morning";
+
+    static void scheduleMorning(Context c) {
+        SharedPreferences p = prefs(c);
+        AlarmManager am = c.getSystemService(AlarmManager.class);
+        PendingIntent pi = PendingIntent.getBroadcast(c, 77, new Intent(c, MorningReceiver.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        if (am == null) return;
+        am.cancel(pi);
+        if (!p.getBoolean("morning", false)) return;
+        String at = p.getString("morningAt", "07:00");
+        int hh = 7, mm = 0;
+        try { hh = Integer.parseInt(at.substring(0, 2)); mm = Integer.parseInt(at.substring(3, 5)); } catch (Exception ignored) { }
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, hh); cal.set(Calendar.MINUTE, mm); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0);
+        if (cal.getTimeInMillis() <= System.currentTimeMillis() + 30000) cal.add(Calendar.DAY_OF_YEAR, 1);
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+    }
+
+    static void morning(Context c) {
+        SharedPreferences p = prefs(c);
+        if (!p.getBoolean("morning", false) || !canNotify(c)) return;
+        try {
+            JSONObject h = new JSONObject(p.getString("home", "null"));
+            String name = h.optString("name", "Мой город");
+            String url = String.format(Locale.US,
+                "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
+                + "&hourly=precipitation_probability,precipitation&forecast_hours=18"
+                + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max"
+                + "&forecast_days=1&timezone=auto&wind_speed_unit=ms", h.getDouble("lat"), h.getDouble("lon"));
+            JSONObject w = new JSONObject(get(url));
+            JSONObject d = w.getJSONObject("daily");
+            boolean f = "F".equals(p.getString("units", "C"));
+            int code = d.getJSONArray("weather_code").getInt(0);
+            double pr = d.getJSONArray("precipitation_sum").optDouble(0, 0);
+            int prob = d.getJSONArray("precipitation_probability_max").optInt(0, 0);
+            StringBuilder sb = new StringBuilder();
+            sb.append("Днём до ").append(deg(d.getJSONArray("temperature_2m_max").getDouble(0), f))
+              .append(", ночью ").append(deg(d.getJSONArray("temperature_2m_min").getDouble(0), f))
+              .append(". ").append(describe(code)).append(".");
+            if (pr >= 0.3) {
+                JSONObject hr = w.getJSONObject("hourly");
+                JSONArray t = hr.getJSONArray("time"), pp = hr.getJSONArray("precipitation_probability");
+                String from = null;
+                for (int i = 0; i < t.length(); i++) if (pp.optInt(i, 0) >= 50) { from = t.getString(i).substring(11, 16); break; }
+                sb.append(" Осадки ").append(from != null ? "с " + from : "возможны").append(" (").append(prob).append("%) — возьмите зонт.");
+            } else sb.append(" Без осадков.");
+            sb.append(" Ветер до ").append(Math.round(d.getJSONArray("wind_speed_10m_max").optDouble(0, 0)))
+              .append(" м/с, порывы до ").append(Math.round(d.getJSONArray("wind_gusts_10m_max").optDouble(0, 0))).append(".");
+            NotificationManager nm = c.getSystemService(NotificationManager.class);
+            if (nm != null && nm.getNotificationChannel(MORNING) == null) {
+                NotificationChannel ch = new NotificationChannel(MORNING, "Утренняя сводка", NotificationManager.IMPORTANCE_LOW);
+                ch.setDescription("Погода на день каждое утро");
+                nm.createNotificationChannel(ch);
+            }
+            PendingIntent pi = PendingIntent.getActivity(c, 2, new Intent(c, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            Notification n = new Notification.Builder(c, MORNING)
+                .setSmallIcon(R.drawable.ic_notify)
+                .setContentTitle("Доброе утро! Погода в «" + name + "»")
+                .setContentText(sb.toString())
+                .setStyle(new Notification.BigTextStyle().bigText(sb.toString()))
+                .setColor(0xFFFFB35C).setContentIntent(pi).setAutoCancel(true).build();
+            if (nm != null) nm.notify(50, n);
+        } catch (Exception ignored) { /* no network at that moment: skip today */ }
     }
 
     private static void showEmpty(Context c) {
@@ -249,7 +348,7 @@ final class Weather {
     private static String get(String u) throws Exception {
         HttpURLConnection con = (HttpURLConnection) new URL(u).openConnection();
         con.setConnectTimeout(15000); con.setReadTimeout(15000);
-        con.setRequestProperty("User-Agent", "AtmosferaApp/1.4");
+        con.setRequestProperty("User-Agent", "AtmosferaApp/1.5");
         try (BufferedReader r = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"))) {
             StringBuilder sb = new StringBuilder(); String line;
             while ((line = r.readLine()) != null) sb.append(line);

@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.4");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.5");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -139,6 +139,14 @@ public class MainActivity extends Activity {
             });
         }
         @JavascriptInterface public void stopSpeak() { runOnUiThread(() -> { if (tts != null) tts.stop(); }); }
+        @JavascriptInterface public void setMorning(boolean on, String at) {
+            boolean was = Weather.prefs(MainActivity.this).getBoolean("morning", false);
+            String wasAt = Weather.prefs(MainActivity.this).getString("morningAt", "07:00");
+            Weather.prefs(MainActivity.this).edit().putBoolean("morning", on).putString("morningAt", at).apply();
+            if (on != was || !at.equals(wasAt)) Weather.scheduleMorning(MainActivity.this);
+            if (on && !was && Build.VERSION.SDK_INT >= 33 && !Weather.canNotify(MainActivity.this))
+                runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY));
+        }
         @JavascriptInterface public void setTheme(String t) {
             runOnUiThread(() -> {
                 boolean light = "light".equals(t);

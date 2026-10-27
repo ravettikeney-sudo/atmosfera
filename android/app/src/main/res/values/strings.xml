@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Атмосфера</string>
     <string name="widget_desc">Погода в главном городе</string>
+    <string name="widget_small_desc">Температура в главном городе</string>
+    <string name="widget_large_desc">Погода и прогноз на 6 часов</string>
 </resources>

@@ -34,6 +34,21 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_weather_info" />
         </receiver>
+        <receiver android:name=".WeatherWidgetSmall" android:exported="true" android:label="Атмосфера · мини">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_small_info" />
+        </receiver>
+        <receiver android:name=".WeatherWidgetLarge" android:exported="true" android:label="Атмосфера · прогноз">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_large_info" />
+        </receiver>
+        <receiver android:name=".MorningReceiver" android:exported="false" />
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".Updater$InstallResult" android:exported="false" />
         <service android:name=".WeatherJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
     </application>

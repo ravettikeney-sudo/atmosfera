@@ -190,8 +190,8 @@ body.wxmode .toolbar{bottom:calc(30px + env(safe-area-inset-bottom,0px) + var(--
 .toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9;background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);width:max-content;max-width:calc(100vw - 32px)}
 
 /* temperature text tinted by its value: --t comes from the temperature scale */
-.tc{color:var(--t,var(--fg));fill:var(--t,var(--fg))}
-:root[data-theme="light"] .tc{color:color-mix(in srgb, var(--t) 52%, #0c1630);fill:color-mix(in srgb, var(--t) 52%, #0c1630)}
+.tc,.day .range .tc{color:var(--t,var(--fg));fill:var(--t,var(--fg))}
+:root[data-theme="light"] .tc,:root[data-theme="light"] .day .range .tc{color:color-mix(in srgb, var(--t) 52%, #0c1630);fill:color-mix(in srgb, var(--t) 52%, #0c1630)}
 /* every pressable thing lights up when pressed */
 button,[role=button],.layer,.crow .open,.chip,.qbtn,.tg,.tabs button,.segm button,.peek,.mc{transition:background-color .15s,box-shadow .15s,transform .12s,border-color .15s}
 button:active,[role=button]:active,.tap{transform:scale(.96)}

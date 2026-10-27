@@ -9,6 +9,11 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.Locale;
 import android.view.View;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -26,6 +31,10 @@ public class MainActivity extends Activity {
     private static final String HOST = "ravettikeney-sudo.github.io";
     private static final int REQ_LOCATION = 7;
     private static final int REQ_NOTIFY = 8;
+    private static final int REQ_VOICE = 9;
+    private TextToSpeech tts;
+    private boolean ttsReady = false;
+    private String pendingSpeech = null;
 
     private WebView web;
     private String geoOrigin;
@@ -51,7 +60,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.3");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.4");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -107,6 +116,29 @@ public class MainActivity extends Activity {
                     runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY));
             }
         }
+        @JavascriptInterface public void listen() {
+            runOnUiThread(() -> {
+                Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU");
+                i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Спросите о погоде");
+                try { startActivityForResult(i, REQ_VOICE); }
+                catch (Exception e) { js("window.atmVoiceError && window.atmVoiceError()"); }
+            });
+        }
+        @JavascriptInterface public void speak(String text) {
+            runOnUiThread(() -> {
+                if (tts == null) {
+                    pendingSpeech = text;
+                    tts = new TextToSpeech(MainActivity.this, status -> {
+                        ttsReady = status == TextToSpeech.SUCCESS;
+                        if (ttsReady) { tts.setLanguage(new Locale("ru", "RU")); if (pendingSpeech != null) { tts.speak(pendingSpeech, TextToSpeech.QUEUE_FLUSH, null, "atm"); pendingSpeech = null; } }
+                    });
+                } else if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "atm");
+                else pendingSpeech = text;
+            });
+        }
+        @JavascriptInterface public void stopSpeak() { runOnUiThread(() -> { if (tts != null) tts.stop(); }); }
         @JavascriptInterface public void setTheme(String t) {
             runOnUiThread(() -> {
                 boolean light = "light".equals(t);
@@ -122,6 +154,17 @@ public class MainActivity extends Activity {
                 }
             });
         }
+    }
+
+    private void js(String code) { web.post(() -> web.evaluateJavascript(code, null)); }
+
+    @Override
+    protected void onActivityResult(int code, int result, Intent data) {
+        super.onActivityResult(code, result, data);
+        if (code != REQ_VOICE) return;
+        ArrayList<String> r = data == null ? null : data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+        if (result == RESULT_OK && r != null && !r.isEmpty()) js("window.atmVoiceResult && window.atmVoiceResult(" + JSONObject.quote(r.get(0)) + ")");
+        else js("window.atmVoiceError && window.atmVoiceError()");
     }
 
     private boolean hasLocation() {
@@ -161,5 +204,5 @@ public class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
     @Override protected void onPause() { super.onPause(); web.onPause(); Weather.refreshAsync(this, false); }
     @Override protected void onResume() { super.onResume(); web.onResume(); Updater.resume(this); }
-    @Override protected void onDestroy() { web.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if (tts != null) tts.shutdown(); web.destroy(); super.onDestroy(); }
 }

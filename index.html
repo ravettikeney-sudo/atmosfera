@@ -469,6 +469,11 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
   body.wxmode .toolbar{bottom:calc(var(--wxh,220px) + 12px)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.shx-tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--raise);border:1px solid var(--line);margin-bottom:14px}
+.shx-tabs button{flex:1;min-width:0;padding:9px 8px;border-radius:10px;border:0;background:none;font:700 14px var(--body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shx-tabs button[aria-selected="true"]{background:var(--ice);color:#0d1830}
+.shx-prev.wide{aspect-ratio:1200/630}
+.share-app{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:12px;border-radius:12px;border:0;color:#fff;font:700 15px var(--body);background:linear-gradient(120deg,#ff6a8a,#ff9d4a 50%,#ffc04d)}
 /* ---- share ---- */
 .qbtn.share{display:inline-flex;align-items:center;gap:7px;border:0;color:#fff;font-weight:700;background:linear-gradient(120deg,#ff6a8a,#ff9d4a 45%,#ffd35c);box-shadow:0 6px 18px rgba(255,120,90,.35)}
 .qbtn.share:hover{filter:brightness(1.06)}
@@ -1280,40 +1285,79 @@ async function copyText(s){
   try{ await navigator.clipboard.writeText(s); return true; }catch(e){}
   try{ const ta = document.createElement("textarea"); ta.value = s; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; }
 }
+const APP_PAGE = APP_URL + "download/";
+const APP_TEXT = "Нашёл классное приложение погоды — «Атмосфера» 🌍 Живой 3D-глобус, радар дождя, прогноз на 16 дней и виджеты. Бесплатно и без рекламы. Скачать:";
+let promoB64 = null;
+async function promoImage(){
+  if(promoB64) return promoB64;
+  const img = new Image(); img.src = "og-image.jpg";
+  await img.decode();
+  const cv = document.createElement("canvas"); cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+  cv.getContext("2d").drawImage(img, 0, 0);
+  return promoB64 = cv.toDataURL("image/png").split(",")[1];
+}
 function closeShare(){ const b = $("#shx"); if(b){ b.remove(); if(shareState.url) URL.revokeObjectURL(shareState.url); shareState.url = shareState.blob = null; } }
-async function shareForecast(w){
-  if(!current || !w) return;
-  closeShare();
-  const link = placeLink(), text = shareText(w), title = `Погода: ${current.name}`;
+function socialGrid(link, text, title){
   const U = encodeURIComponent(link), Tx = encodeURIComponent(text), Ti = encodeURIComponent(title);
-  const nativeImg = !!(window.AtmApp && window.AtmApp.shareImage);
+  return `${SOCIAL.map(([k,name,col,ic,mk]) => `<a href="${esc(mk(U,Tx,Ti))}" target="_blank" rel="noopener" data-k="${k}"><i style="--c:${col}">${ic}</i>${name}</a>`).join("")}
+      <button class="shxCopy"><i style="--c:#2f8f83"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></i>Копировать</button>`;
+}
+const SEND_IC = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>`;
+function shareApp(){ openShare("app"); }
+function shareForecast(){ openShare("app"); }
+function openShare(mode){
+  closeShare();
+  const hasWx = !!(current && current.wx);
   const box = document.createElement("div"); box.className = "shx"; box.id = "shx";
   box.innerHTML = `<div class="shx-box" role="dialog" aria-modal="true" aria-labelledby="shxT">
-    <div class="shx-head"><h3 id="shxT">Поделиться погодой</h3><button id="shxX" aria-label="Закрыть"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="shx-prev"><div class="ld">Рисую карточку…</div></div>
-    <div class="shx-main">
-      <button class="go" id="shxImg" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>Отправить картинку</button>
-      <button id="shxSave" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Сохранить</button>
-    </div>
-    <p class="shx-lbl">Отправить ссылку</p>
-    <div class="shx-grid">
-      ${SOCIAL.map(([k,name,col,ic,mk]) => `<a href="${esc(mk(U,Tx,Ti))}" target="_blank" rel="noopener" data-k="${k}"><i style="--c:${col}">${ic}</i>${name}</a>`).join("")}
-      <button id="shxCopy"><i style="--c:#2f8f83"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></i>Копировать</button>
-      ${navigator.share ? `<button id="shxMore"><i style="--c:linear-gradient(135deg,#7cc4ff,#a78bfa)"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg></i>Ещё</button>` : ""}
-    </div>
-    <p class="shx-note">По ссылке у друга сразу откроется погода в городе ${esc(current.name)}.</p>
+    <div class="shx-head"><h3 id="shxT">Поделиться</h3><button id="shxX" aria-label="Закрыть"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    ${hasWx ? `<div class="shx-tabs" role="tablist"><button role="tab" data-m="app">Приложение</button><button role="tab" data-m="wx">Погода: ${esc(current.name)}</button></div>` : ""}
+    <div id="shxC"></div>
   </div>`;
   document.body.appendChild(box);
   box.addEventListener("click", e => { if(e.target === box) closeShare(); });
   $("#shxX").onclick = closeShare;
-  $("#shxCopy").onclick = async () => toast(await copyText(text+"\n"+link) ? "Ссылка и прогноз скопированы — вставьте в любой чат" : "Не получилось скопировать");
-  if($("#shxMore")) $("#shxMore").onclick = async () => { try{ await navigator.share({title, text, url: link}); }catch(e){} };
+  box.querySelectorAll(".shx-tabs button").forEach(b => b.onclick = () => renderShare(b.dataset.m));
+  renderShare(mode === "wx" && hasWx ? "wx" : "app");
+}
+function wireCommon(c, link, text, title){
+  c.querySelector(".shxCopy").onclick = async () => toast(await copyText(text+"\n"+link) ? "Скопировано — вставьте в любой чат" : "Не получилось скопировать");
+}
+async function renderShare(mode){
+  const box = $("#shx"); if(!box) return;
+  box.querySelectorAll(".shx-tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.m === mode));
+  const c = $("#shxC"), nativeImg = !!(window.AtmApp && window.AtmApp.shareImage);
+  if(shareState.url){ URL.revokeObjectURL(shareState.url); shareState.url = shareState.blob = null; }
+  if(mode === "app"){
+    const link = APP_PAGE, text = APP_TEXT, title = "«Атмосфера» — погода на 3D-глобусе";
+    c.innerHTML = `<div class="shx-prev wide"><img alt="Приглашение в приложение «Атмосфера»" src="og-image.jpg"></div>
+      <div class="shx-main"><button class="go" id="shxSend" ${nativeImg || navigator.share ? "" : "hidden"}>${SEND_IC}Пригласить друга</button></div>
+      <p class="shx-lbl">Или отправить через</p>
+      <div class="shx-grid">${socialGrid(link, text, title)}</div>
+      <p class="shx-note">Друг получит ссылку на страницу «Скачать Атмосферу»: там кнопка установки для Android и короткая инструкция.</p>`;
+    wireCommon(c, link, text, title);
+    $("#shxSend").onclick = async () => {
+      if(nativeImg){ try{ window.AtmApp.shareImage(await promoImage(), text+" "+link); return; }catch(e){} }
+      try{ await navigator.share({title, text, url: link}); }catch(e){}
+    };
+    return;
+  }
+  const w = current.wx, link = placeLink(), text = shareText(w), title = `Погода: ${current.name}`;
+  c.innerHTML = `<div class="shx-prev"><div class="ld">Рисую карточку…</div></div>
+    <div class="shx-main">
+      <button class="go" id="shxImg" hidden>${SEND_IC}Отправить картинку</button>
+      <button id="shxSave" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Сохранить</button>
+    </div>
+    <p class="shx-lbl">Отправить ссылку на прогноз</p>
+    <div class="shx-grid">${socialGrid(link, text, title)}</div>
+    <p class="shx-note">По ссылке у друга сразу откроется погода в городе ${esc(current.name)}.</p>`;
+  wireCommon(c, link, text, title);
   try{
     const cv = await drawShareCard(w);
-    if(!$("#shx")) return;
+    if(!$("#shx") || !c.querySelector(".shx-prev .ld")) return;
     shareState.blob = await new Promise(r => cv.toBlob(r, "image/png"));
     shareState.url = URL.createObjectURL(shareState.blob);
-    box.querySelector(".shx-prev").innerHTML = `<img alt="Карточка с погодой: ${esc(current.name)}" src="${shareState.url}">`;
+    c.querySelector(".shx-prev").innerHTML = `<img alt="Карточка с погодой: ${esc(current.name)}" src="${shareState.url}">`;
     const file = new File([shareState.blob], `pogoda-${(current.name||"atmosfera").replace(/[^\p{L}\p{N}]+/gu,"-")}.png`, {type:"image/png"});
     const canFiles = !!(navigator.canShare && navigator.canShare({files:[file]}));
     if(canFiles || nativeImg){
@@ -1326,11 +1370,9 @@ async function shareForecast(w){
     if(!inApp){
       $("#shxSave").hidden = false;
       $("#shxSave").onclick = () => { const a = document.createElement("a"); a.href = shareState.url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); toast("Картинка сохранена"); };
-    } else if(!nativeImg){
-      box.querySelector(".shx-note").textContent = `Друзья получат ссылку, по которой сразу откроется погода в городе ${current.name}. Отправить саму картинку можно из браузера Chrome.`;
     }
   }catch(e){
-    const p = box.querySelector(".shx-prev"); if(p) p.remove();
+    const p = c.querySelector(".shx-prev"); if(p) p.remove();
   }
 }
 
@@ -1905,7 +1947,7 @@ function toggleSave(){
   saveFavs();
 }
 $("#star").onclick = toggleSave;
-$("#shareTop").onclick = () => { if(current && current.wx) shareForecast(current.wx); else toast("Погода ещё загружается…"); };
+$("#shareTop").onclick = () => openShare("app");
 let citySeq = 0;
 async function renderCities(){
   const box = $("#cities"), seq = ++citySeq;
@@ -2016,8 +2058,10 @@ function renderSettings(){
       <span style="display:flex;gap:8px;align-items:center"><input type="time" id="setMorningAt" value="${settings.morningAt || "07:00"}" ${inApp?"":"disabled"} style="height:34px;border-radius:9px;border:1px solid var(--line);background:var(--raise);padding:0 6px"><input type="checkbox" id="setMorning" ${settings.morning?"checked":""} ${inApp?"":"disabled"}></span></label>
     ${inApp ? `<div class="snote">Виджеты: долго нажмите на пустое место рабочего стола → «Виджеты» → «Атмосфера». Есть маленький, средний и большой с почасовым прогнозом. Показывают главный город.</div>`
             : `<a class="addcur" style="display:block;text-align:center;text-decoration:none" href="atmosfera.apk">Скачать приложение для Android</a><div class="snote">В приложении есть виджет на рабочий стол и уведомления о дожде и опасной погоде.</div>`}
+    <button class="share-app" id="setShare">${SEND_IC}Рассказать друзьям о приложении</button>
     <div class="snote">Данные: Open-Meteo (ECMWF, GFS, ICON), NASA GIBS, RainViewer, NOAA SWPC, OpenStreetMap.</div>`;
   $("#setClose").onclick = closeSettings;
+  $("#setShare").onclick = () => { closeSettings(); shareApp(); };
   box.querySelectorAll('[aria-label="Оформление"] button').forEach(b => b.onclick = () => { settings.theme = b.dataset.v; saveSettings(); applyTheme(); renderSettings(); });
   box.querySelectorAll('[aria-label="Градусы"] button').forEach(b => b.onclick = () => { if(units !== b.dataset.v) $("#units").click(); renderSettings(); });
   $("#setPeek").onchange = e => { settings.peek = e.target.checked; saveSettings(); peekUpdate(true); };

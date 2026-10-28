@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Скачать «Атмосферу» — погода на 3D-глобусе</title>
+<meta name="description" content="Бесплатное приложение погоды: живой 3D-глобус, радар дождя, прогноз на 16 дней, спутниковые облака, виджеты и уведомления. Без рекламы.">
+<meta name="theme-color" content="#14234a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Атмосфера">
+<meta property="og:title" content="«Атмосфера» — погода на 3D-глобусе. Скачать бесплатно">
+<meta property="og:description" content="Живой глобус, радар дождя, прогноз на 16 дней, виджеты и уведомления. Бесплатно и без рекламы.">
+<meta property="og:url" content="https://ravettikeney-sudo.github.io/atmosfera/download/">
+<meta property="og:image" content="https://ravettikeney-sudo.github.io/atmosfera/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ravettikeney-sudo.github.io/atmosfera/og-image.jpg">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--bg:#0b1533;--bg2:#14234a;--fg:#eef3fb;--muted:#9fb0c9;--line:rgba(170,200,240,.16);--card:rgba(255,255,255,.05);--ice:#7cc4ff;--sun:#ffb35c}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--fg);background:radial-gradient(1200px 700px at 80% -10%,#2b5fb8 0,transparent 60%),linear-gradient(180deg,var(--bg2),var(--bg) 60%);min-height:100vh;line-height:1.5}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.32em;font-size:15px;color:#cfe6ff}
+.brand img{width:40px;height:40px;border-radius:11px}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:40px 0 24px}
+h1{font-size:clamp(38px,6vw,62px);line-height:1.05;margin:0 0 18px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h1 span{background:linear-gradient(100deg,#7cc4ff,#a9e3ff 40%,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:19px;color:var(--muted);margin:0 0 28px;max-width:30em}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:16px 26px;border-radius:16px;font-weight:800;font-size:17px;text-decoration:none;border:1px solid var(--line);background:var(--card)}
+.btn.main{border:0;color:#fff;background:linear-gradient(120deg,#ff6a8a,#ff9d4a 50%,#ffc04d);box-shadow:0 12px 30px rgba(255,120,90,.35)}
+.btn.main small{display:block;font-size:12px;font-weight:600;opacity:.9}
+.btn:active{transform:scale(.98)}
+.free{margin-top:14px;font-size:14px;color:var(--muted)}
+.phone{justify-self:center;width:min(300px,78vw);aspect-ratio:541/1101;border-radius:38px;padding:9px;background:linear-gradient(160deg,#334a78,#0e1838);box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(170,200,240,.2)}
+.phone img{width:100%;height:100%;object-fit:cover;object-position:top;border-radius:30px;display:block}
+h2{font-size:28px;margin:48px 0 18px;letter-spacing:-.01em}
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.f{padding:20px;border-radius:20px;background:var(--card);border:1px solid var(--line)}
+.f b{display:block;font-size:17px;margin:10px 0 4px}
+.f p{margin:0;color:var(--muted);font-size:15px}
+.f .i{font-size:28px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;counter-reset:s}
+.st{padding:20px;border-radius:20px;background:var(--card);border:1px solid var(--line);position:relative}
+.st:before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--ice);color:#0b1533;font-weight:800;margin-bottom:10px}
+.st p{margin:0;color:var(--muted);font-size:15px}
+.st b{color:var(--fg)}
+.note{margin-top:14px;padding:16px 18px;border-radius:16px;background:rgba(124,196,255,.08);border:1px solid rgba(124,196,255,.25);font-size:15px;color:#cfe0f5}
+.iphone{margin-top:14px;font-size:15px;color:var(--muted)}
+.final{margin-top:48px;text-align:center;padding:36px 20px;border-radius:26px;background:linear-gradient(135deg,rgba(124,196,255,.14),rgba(255,157,74,.12));border:1px solid var(--line)}
+.final h2{margin:0 0 18px}
+.final .cta{justify-content:center}
+footer{margin-top:36px;text-align:center;color:var(--muted);font-size:13px}
+@media (max-width:820px){
+  .hero{grid-template-columns:1fr;gap:32px;padding-top:28px}
+  .feats,.steps{grid-template-columns:1fr}
+  .cta .btn{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><img src="../icon-192.png" alt="">АТМОСФЕРА</div>
+
+  <section class="hero">
+    <div>
+      <h1>Погода на живом <span>3D-глобусе</span></h1>
+      <p class="lead">Крутите планету и смотрите погоду в любом городе и любой точке мира: дождь на радаре, облака со спутников, прогноз на 16 дней.</p>
+      <div class="cta">
+        <a class="btn main" href="../atmosfera.apk" download id="dl">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          <span>Скачать для Android<small id="ver">бесплатно · 86 КБ</small></span>
+        </a>
+        <a class="btn" href="../">Открыть в браузере</a>
+      </div>
+      <p class="free">Бесплатно. Без рекламы. Без регистрации.</p>
+    </div>
+    <div class="phone"><img src="../shot-phone.jpg" alt="Экран приложения «Атмосфера»: погода в Минске на 3D-глобусе"></div>
+  </section>
+
+  <h2>Что умеет</h2>
+  <div class="feats">
+    <div class="f"><span class="i">🌍</span><b>Живой глобус</b><p>Температура в 90 городах мира прямо на планете, спутниковые снимки облаков каждые 10 минут.</p></div>
+    <div class="f"><span class="i">🌧</span><b>Радар дождя</b><p>Где идёт дождь или снег сейчас и когда он дойдёт до вас: «через 40 минут начнётся дождь».</p></div>
+    <div class="f"><span class="i">📅</span><b>Прогноз на 16 дней</b><p>Почасовой график на 48 часов, ветер, давление, качество воздуха и магнитные бури.</p></div>
+    <div class="f"><span class="i">🔔</span><b>Уведомления</b><p>Предупредит о дожде, заморозках и опасной погоде. Утренняя сводка на весь день.</p></div>
+    <div class="f"><span class="i">📱</span><b>Виджеты</b><p>Три размера на рабочий стол: погода сейчас и почасовой прогноз.</p></div>
+    <div class="f"><span class="i">👕</span><b>Полезные советы</b><p>Как одеться, когда мыть машину, сравнение городов, погода в этот день с 1940 года.</p></div>
+  </div>
+
+  <h2>Как установить на Android</h2>
+  <div class="steps">
+    <div class="st"><p>Нажмите <b>«Скачать для Android»</b> и откройте скачанный файл <b>atmosfera.apk</b>.</p></div>
+    <div class="st"><p>Телефон спросит, можно ли устанавливать приложения из браузера. Нажмите <b>«Настройки» → «Разрешить»</b> и вернитесь назад.</p></div>
+    <div class="st"><p>Нажмите <b>«Установить»</b>. Иконка «Атмосфера» появится среди приложений. Дальше обновления приходят сами.</p></div>
+  </div>
+  <div class="note">Предупреждение «файл может быть опасен» Android показывает для любого приложения не из Google Play. «Атмосфера» не просит доступа к контактам, фото и сообщениям: только к местоположению, чтобы показать погоду там, где вы находитесь.</div>
+  <p class="iphone"><b style="color:var(--fg)">На iPhone:</b> откройте <a href="../">сайт приложения</a> в Safari, нажмите «Поделиться» → «На экран „Домой“». Иконка появится как у обычного приложения.</p>
+
+  <section class="final">
+    <h2>Попробуйте прямо сейчас</h2>
+    <div class="cta">
+      <a class="btn main" href="../atmosfera.apk" download>Скачать для Android</a>
+      <a class="btn" href="../">Открыть в браузере</a>
+    </div>
+  </section>
+
+  <footer>«Атмосфера» · данные Open-Meteo, NASA, RainViewer, NOAA</footer>
+</div>
+<script>
+fetch("../version.json?t="+Date.now()).then(r=>r.json()).then(v=>{ document.getElementById("ver").textContent = "версия " + v.versionName + " · бесплатно"; }).catch(()=>{});
+</script>
+</body>
+</html>

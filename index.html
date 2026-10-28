@@ -6,6 +6,17 @@
 <title>Атмосфера — погода на 3D-глобусе</title>
 <meta name="description" content="Точная погода в любой точке планеты на интерактивном 3D-глобусе: прогноз на 16 дней, карта осадков, радар, живые спутниковые снимки облаков и звуки погоды.">
 <meta name="theme-color" content="#14234a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Атмосфера">
+<meta property="og:title" content="Атмосфера — погода на 3D-глобусе">
+<meta property="og:description" content="Погода в любой точке планеты: прогноз на 16 дней, радар осадков и живые спутниковые облака. Бесплатно и без рекламы.">
+<meta property="og:url" content="https://ravettikeney-sudo.github.io/atmosfera/">
+<meta property="og:image" content="https://ravettikeney-sudo.github.io/atmosfera/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ravettikeney-sudo.github.io/atmosfera/og-image.jpg">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -458,6 +469,37 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
   body.wxmode .toolbar{bottom:calc(var(--wxh,220px) + 12px)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---- share ---- */
+.qbtn.share{display:inline-flex;align-items:center;gap:7px;border:0;color:#fff;font-weight:700;background:linear-gradient(120deg,#ff6a8a,#ff9d4a 45%,#ffd35c);box-shadow:0 6px 18px rgba(255,120,90,.35)}
+.qbtn.share:hover{filter:brightness(1.06)}
+.icon-btn.shr{color:#ffb35c}
+.shx{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(4,9,24,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:shxIn .2s ease}
+.shx[hidden]{display:none}
+@keyframes shxIn{from{opacity:0}to{opacity:1}}
+@keyframes shxUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.shx-box{width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;background:var(--panel-solid);border:1px solid var(--line);border-radius:24px;padding:18px 18px 20px;box-shadow:0 30px 80px rgba(0,0,0,.55);animation:shxUp .28s cubic-bezier(.2,.9,.3,1.2)}
+.shx-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.shx-head h3{margin:0;font:700 19px var(--display)}
+.shx-head button{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);background:var(--raise);display:grid;place-items:center}
+.shx-prev{position:relative;border-radius:18px;overflow:hidden;background:var(--raise);aspect-ratio:1080/1350;max-height:46dvh;margin:0 auto 14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.shx-prev img{display:block;width:100%;height:100%;object-fit:contain}
+.shx-prev .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:14px}
+.shx-main{display:flex;gap:8px;margin-bottom:16px}
+.shx-main button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 12px;border-radius:14px;font:700 15px var(--body);border:1px solid var(--line);background:var(--raise)}
+.shx-main button.go{border:0;color:#fff;background:linear-gradient(120deg,#ff6a8a,#ff9d4a 50%,#ffc04d);box-shadow:0 8px 22px rgba(255,120,90,.35)}
+.shx-main button[hidden]{display:none}
+.shx-lbl{font:600 11px var(--body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 10px}
+.shx-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px 6px}
+.shx-grid a,.shx-grid button{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:var(--fg);font-size:11.5px;font-weight:600;background:none;border:0;padding:0;text-align:center;line-height:1.15}
+.shx-grid i{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font:800 17px var(--display);font-style:normal;background:var(--c);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 45%,transparent);transition:transform .15s}
+.shx-grid a:hover i,.shx-grid button:hover i{transform:translateY(-2px) scale(1.05)}
+.shx-grid a:active i,.shx-grid button:active i{transform:scale(.92)}
+.shx-note{margin:14px 0 0;font-size:12.5px;color:var(--muted);text-align:center}
+@media (max-width:760px){
+  .shx{align-items:flex-end}
+  .shx-box{width:100%;border-radius:24px 24px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));max-height:94dvh}
+  .shx-prev{max-height:40dvh}
+}
 </style>
 </head>
 <body>
@@ -560,6 +602,9 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
     <div class="head-actions">
       <button class="icon-btn glass star" id="star" aria-pressed="false" title="В избранное" aria-label="Добавить в избранное">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>
+      </button>
+      <button class="icon-btn glass shr" id="shareTop" title="Поделиться" aria-label="Поделиться погодой">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
       </button>
       <button class="icon-btn glass" id="close" title="Закрыть" aria-label="Закрыть панель">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -1003,7 +1048,7 @@ function renderWeather(){
     <button class="qbtn" id="qWear">Как одеться?</button>
     <button class="qbtn" id="qMonth">Прогноз на месяц</button>
     <button class="qbtn" id="qCompare">Сравнить с городом</button>
-    <button class="qbtn" id="qShare">Поделиться</button>
+    <button class="qbtn share" id="qShare"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>Поделиться</button>
   </div>
   <div class="answer" id="answer" hidden></div>
   <div class="section"><h4>Сейчас</h4><div class="grid">
@@ -1140,15 +1185,153 @@ function wearText(w){
   if((w.current.uv_index??0)>=6) s += "; нужен солнцезащитный крем";
   return ["Как одеться", `Ощущается как ${Tu(t)}. ${s}.`];
 }
+/* ================= share: weather card picture + social networks ================= */
+const APP_URL = "https://ravettikeney-sudo.github.io/atmosfera/";
+const sgn = c => { const v = T(c); return (v>0?"+":v<0?"−":"")+Math.abs(v)+"°"; };
+function placeLink(){
+  if(!current) return APP_URL;
+  const p = new URLSearchParams({lat: current.lat.toFixed(3), lon: current.lon.toFixed(3), n: current.name||""});
+  if(current.sub) p.set("s", current.sub);
+  return APP_URL+"?"+p.toString();
+}
+function shareText(w){
+  const c = w.current, d = w.daily, low = s => (s||"").toLowerCase();
+  const nc = nowcast(w).text;
+  return `${current.name}: сейчас ${sgn(c.temperature_2m)}, ${low((WMO[c.weather_code]||["—"])[0])}. Завтра ${sgn(d.temperature_2m_min[1])}…${sgn(d.temperature_2m_max[1])}, ${low((WMO[d.weather_code[1]]||["—"])[0])}.${nc?" "+nc+".":""}\nПогода на 3D-глобусе — «Атмосфера» 🌍`;
+}
+function svgImage(code, day){
+  return new Promise(res => {
+    const s = icon(code, day, 200).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
+    const img = new Image(); img.onload = () => res(img); img.onerror = () => res(null);
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(s);
+  });
+}
+function fitFont(ctx, text, weight, size, maxW, min=28){
+  do { ctx.font = `${weight} ${size}px Manrope, system-ui, sans-serif`; if(ctx.measureText(text).width <= maxW) return size; size -= 4; } while(size > min);
+  return size;
+}
+function rrect(ctx, x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+async function drawShareCard(w){
+  const W = 1080, H = 1350, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d"), c = w.current, d = w.daily;
+  try{ await Promise.all(["300 200px Manrope","700 60px Manrope","600 40px Manrope","800 30px Manrope"].map(f => document.fonts.load(f))); }catch(e){}
+  const kind = (WMO[c.weather_code]||["","cloud"])[1];
+  const bg = !c.is_day ? ["#101c44","#060b20"] : kind==="clear" ? ["#2a64c4","#0f2a63"] : kind==="partly" ? ["#2b5aa8","#112652"] : kind==="snow" ? ["#46609a","#1a2850"] : ["#34496f","#121c36"];
+  let g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,bg[0]); g.addColorStop(1,bg[1]); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  const tc = tColor(c.temperature_2m);
+  g = ctx.createRadialGradient(860,330,20,860,330,620); g.addColorStop(0,tc+"66"); g.addColorStop(1,tc+"00"); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // planet arc at the bottom
+  g = ctx.createLinearGradient(0,H-110,0,H); g.addColorStop(0,"rgba(124,196,255,.0)"); g.addColorStop(1,"rgba(124,196,255,.16)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W/2, H+1515, 1620, 0, Math.PI*2); ctx.fill();
+  // brand
+  ctx.lineWidth = 6; ctx.strokeStyle = "#7cc4ff"; ctx.beginPath(); ctx.arc(104,104,26,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = "#ffb35c"; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(80,110); ctx.bezierCurveTo(92,98,104,122,116,108); ctx.lineTo(130,104); ctx.stroke();
+  ctx.fillStyle = "rgba(232,238,248,.85)"; ctx.font = "800 30px Manrope, sans-serif"; ctx.textBaseline = "middle";
+  if("letterSpacing" in ctx) ctx.letterSpacing = "6px"; ctx.fillText("АТМОСФЕРА", 150, 106); if("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  const lt = new Date(c.time); ctx.textAlign = "right"; ctx.font = "600 30px Manrope, sans-serif"; ctx.fillStyle = "rgba(232,238,248,.6)";
+  ctx.fillText(`${lt.getDate()} ${MON[lt.getMonth()]}, ${fmtTime(c.time)}`, W-70, 106); ctx.textAlign = "left";
+  // place
+  ctx.textBaseline = "alphabetic"; ctx.fillStyle = "#fff";
+  fitFont(ctx, current.name, 800, 84, W-140); ctx.fillText(current.name, 70, 250);
+  if(current.sub){ ctx.fillStyle = "rgba(232,238,248,.62)"; fitFont(ctx, current.sub, 600, 38, W-140, 24); ctx.fillText(current.sub, 70, 306); }
+  // temperature + icon
+  const ic = await svgImage(c.weather_code, c.is_day); if(ic) ctx.drawImage(ic, 640, 330, 360, 360);
+  ctx.fillStyle = tc; ctx.font = "300 290px Manrope, sans-serif"; if("letterSpacing" in ctx) ctx.letterSpacing = "-10px";
+  ctx.fillText(sgn(c.temperature_2m), 50, 610); if("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  ctx.fillStyle = "#fff"; fitFont(ctx, (WMO[c.weather_code]||["—"])[0], 700, 54, W-140); ctx.fillText((WMO[c.weather_code]||["—"])[0], 70, 712);
+  ctx.fillStyle = "rgba(232,238,248,.7)"; ctx.font = "600 34px Manrope, sans-serif";
+  ctx.fillText(`Ощущается как ${sgn(c.apparent_temperature)} · ветер ${Math.round(c.wind_speed_10m)} м/с · влажность ${c.relative_humidity_2m}%`, 70, 768, W-140);
+  // nowcast pill
+  const nc = nowcast(w).text;
+  if(nc){ ctx.font = "700 32px Manrope, sans-serif"; const tw = Math.min(ctx.measureText(nc).width, W-200);
+    ctx.fillStyle = "rgba(255,255,255,.1)"; rrect(ctx, 70, 808, tw+64, 66, 33); ctx.fill();
+    ctx.fillStyle = "#cfe6ff"; ctx.fillText(nc, 102, 852, W-200); }
+  // 5 days
+  const top = 920, ph = 310; ctx.fillStyle = "rgba(8,16,40,.38)"; rrect(ctx, 50, top, W-100, ph, 36); ctx.fill();
+  ctx.strokeStyle = "rgba(170,200,240,.16)"; ctx.lineWidth = 2; ctx.stroke();
+  const n = Math.min(5, d.time.length), cw = (W-100)/n; ctx.textAlign = "center";
+  const icons = await Promise.all(Array.from({length:n}, (_,i) => svgImage(d.weather_code[i], 1)));
+  for(let i=0;i<n;i++){
+    const x = 50 + cw*i + cw/2, dt = new Date(d.time[i]+"T12:00:00");
+    ctx.fillStyle = i===0 ? "#fff" : "rgba(232,238,248,.75)"; ctx.font = "700 34px Manrope, sans-serif";
+    ctx.fillText(i===0 ? "Сегодня" : DOW[dt.getDay()], x, top+62);
+    if(icons[i]) ctx.drawImage(icons[i], x-50, top+82, 100, 100);
+    ctx.font = "700 46px Manrope, sans-serif"; ctx.fillStyle = tColor(d.temperature_2m_max[i]); ctx.fillText(sgn(d.temperature_2m_max[i]), x, top+232);
+    ctx.font = "600 34px Manrope, sans-serif"; ctx.fillStyle = tColor(d.temperature_2m_min[i]); ctx.globalAlpha = .8; ctx.fillText(sgn(d.temperature_2m_min[i]), x, top+280); ctx.globalAlpha = 1;
+  }
+  // footer
+  ctx.fillStyle = "rgba(232,238,248,.9)"; ctx.font = "700 32px Manrope, sans-serif"; ctx.fillText("Погода в любой точке планеты на 3D-глобусе", W/2, 1292);
+  ctx.fillStyle = "rgba(160,205,255,.85)"; ctx.font = "600 27px Manrope, sans-serif"; ctx.fillText("ravettikeney-sudo.github.io/atmosfera", W/2, 1330);
+  ctx.textAlign = "left";
+  return cv;
+}
+const shareState = {blob:null, url:null, w:null};
+const SOCIAL = [
+  ["tg","Telegram","#29a9eb",`<svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M21.5 4.3 2.9 11.5c-1 .4-1 1.6.1 1.9l4.7 1.5 1.8 5.6c.3.8 1.2 1 1.8.4l2.6-2.4 4.8 3.5c.7.5 1.6.1 1.8-.7l3.2-15.2c.2-1-.8-1.8-1.7-1.4zM9.6 14.4l8.2-7.2-6.6 8.3-.3 3-1.3-4.1z"/></svg>`, (u,t)=>`https://t.me/share/url?url=${u}&text=${t}`],
+  ["wa","WhatsApp","#25d366",`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.8z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.3-1.8-1-1 .8a4 4 0 0 1-2-2l.8-1-1-1.8z" fill="#fff" stroke="none"/></svg>`, (u,t)=>`https://wa.me/?text=${t}%20${u}`],
+  ["vk","VK","#0077ff","VK", (u,t,title)=>`https://vk.com/share.php?url=${u}&title=${title}`],
+  ["vb","Viber","#7360f2",`<svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M8.6 3.5 6.4 3c-.7-.2-1.4.2-1.7.9l-1 2.6c-.2.6 0 1.2.3 1.7a19 19 0 0 0 10.9 10.9c.5.3 1.1.5 1.7.3l2.6-1c.7-.3 1.1-1 .9-1.7l-.5-2.2c-.2-.7-.8-1.1-1.5-1l-2.3.4a11 11 0 0 1-4.7-4.7l.4-2.3c.1-.7-.3-1.3-1-1.5z"/></svg>`, (u,t)=>`viber://forward?text=${t}%20${u}`],
+  ["ok","ОК","#ee8208","ОК", (u,t)=>`https://connect.ok.ru/offer?url=${u}&title=${t}`],
+  ["x","X","#111","X", (u,t)=>`https://twitter.com/intent/tweet?url=${u}&text=${t}`],
+  ["fb","Facebook","#1877f2","f", (u)=>`https://www.facebook.com/sharer/sharer.php?u=${u}`],
+  ["mail","Почта","#5b6b86",`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6 8.5 7 8.5-7"/></svg>`, (u,t,title)=>`mailto:?subject=${title}&body=${t}%0A${u}`]
+];
+async function copyText(s){
+  try{ await navigator.clipboard.writeText(s); return true; }catch(e){}
+  try{ const ta = document.createElement("textarea"); ta.value = s; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; }
+}
+function closeShare(){ const b = $("#shx"); if(b){ b.remove(); if(shareState.url) URL.revokeObjectURL(shareState.url); shareState.url = shareState.blob = null; } }
 async function shareForecast(w){
-  const c = w.current, d = w.daily;
-  const text = `${current.name}: сейчас ${Tu(c.temperature_2m)}, ${(WMO[c.weather_code]||["—"])[0].toLowerCase()}, ветер ${c.wind_speed_10m.toFixed(0)} м/с. ${nowcast(w).text}. Завтра ${Tu(d.temperature_2m_min[1])}…${Tu(d.temperature_2m_max[1])}, ${(WMO[d.weather_code[1]]||["—"])[0].toLowerCase()}.`;
-  const url = location.href.split("#")[0];
+  if(!current || !w) return;
+  closeShare();
+  const link = placeLink(), text = shareText(w), title = `Погода: ${current.name}`;
+  const U = encodeURIComponent(link), Tx = encodeURIComponent(text), Ti = encodeURIComponent(title);
+  const nativeImg = !!(window.AtmApp && window.AtmApp.shareImage);
+  const box = document.createElement("div"); box.className = "shx"; box.id = "shx";
+  box.innerHTML = `<div class="shx-box" role="dialog" aria-modal="true" aria-labelledby="shxT">
+    <div class="shx-head"><h3 id="shxT">Поделиться погодой</h3><button id="shxX" aria-label="Закрыть"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="shx-prev"><div class="ld">Рисую карточку…</div></div>
+    <div class="shx-main">
+      <button class="go" id="shxImg" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>Отправить картинку</button>
+      <button id="shxSave" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Сохранить</button>
+    </div>
+    <p class="shx-lbl">Отправить ссылку</p>
+    <div class="shx-grid">
+      ${SOCIAL.map(([k,name,col,ic,mk]) => `<a href="${esc(mk(U,Tx,Ti))}" target="_blank" rel="noopener" data-k="${k}"><i style="--c:${col}">${ic}</i>${name}</a>`).join("")}
+      <button id="shxCopy"><i style="--c:#2f8f83"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></i>Копировать</button>
+      ${navigator.share ? `<button id="shxMore"><i style="--c:linear-gradient(135deg,#7cc4ff,#a78bfa)"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg></i>Ещё</button>` : ""}
+    </div>
+    <p class="shx-note">По ссылке у друга сразу откроется погода в городе ${esc(current.name)}.</p>
+  </div>`;
+  document.body.appendChild(box);
+  box.addEventListener("click", e => { if(e.target === box) closeShare(); });
+  $("#shxX").onclick = closeShare;
+  $("#shxCopy").onclick = async () => toast(await copyText(text+"\n"+link) ? "Ссылка и прогноз скопированы — вставьте в любой чат" : "Не получилось скопировать");
+  if($("#shxMore")) $("#shxMore").onclick = async () => { try{ await navigator.share({title, text, url: link}); }catch(e){} };
   try{
-    if(navigator.share){ await navigator.share({title:"Погода — Атмосфера", text, url}); return; }
-  }catch(e){ if(e.name==="AbortError") return; }
-  try{ await navigator.clipboard.writeText(text+" "+url); toast("Прогноз скопирован — вставьте его в любой мессенджер"); }
-  catch(e){ answer(["Скопируйте текст", text+" "+url]); }
+    const cv = await drawShareCard(w);
+    if(!$("#shx")) return;
+    shareState.blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    shareState.url = URL.createObjectURL(shareState.blob);
+    box.querySelector(".shx-prev").innerHTML = `<img alt="Карточка с погодой: ${esc(current.name)}" src="${shareState.url}">`;
+    const file = new File([shareState.blob], `pogoda-${(current.name||"atmosfera").replace(/[^\p{L}\p{N}]+/gu,"-")}.png`, {type:"image/png"});
+    const canFiles = !!(navigator.canShare && navigator.canShare({files:[file]}));
+    if(canFiles || nativeImg){
+      $("#shxImg").hidden = false;
+      $("#shxImg").onclick = async () => {
+        if(nativeImg){ window.AtmApp.shareImage(cv.toDataURL("image/png").split(",")[1], text+"\n"+link); return; }
+        try{ await navigator.share({files:[file], text: text+"\n"+link, title}); }catch(e){ if(e.name!=="AbortError") toast("Не получилось отправить картинку"); }
+      };
+    }
+    if(!inApp){
+      $("#shxSave").hidden = false;
+      $("#shxSave").onclick = () => { const a = document.createElement("a"); a.href = shareState.url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); toast("Картинка сохранена"); };
+    } else if(!nativeImg){
+      box.querySelector(".shx-note").textContent = `Друзья получат ссылку, по которой сразу откроется погода в городе ${current.name}. Отправить саму картинку можно из браузера Chrome.`;
+    }
+  }catch(e){
+    const p = box.querySelector(".shx-prev"); if(p) p.remove();
+  }
 }
 
 /* ---- yesterday, pressure trend ---- */
@@ -1722,6 +1905,7 @@ function toggleSave(){
   saveFavs();
 }
 $("#star").onclick = toggleSave;
+$("#shareTop").onclick = () => { if(current && current.wx) shareForecast(current.wx); else toast("Погода ещё загружается…"); };
 let citySeq = 0;
 async function renderCities(){
   const box = $("#cities"), seq = ++citySeq;
@@ -2588,6 +2772,7 @@ document.addEventListener("pointerdown", e => {
 }, {passive:true});
 /* Android back button (APK shell calls this): close the topmost panel; return true if something was closed */
 window.atmBack = () => {
+  if($("#shx")){ closeShare(); return true; }
   if(!$("#results").hidden){ hideResults(); return true; }
   if(!$("#voice").hidden){ $("#vClose").click(); return true; }
   if(!$("#route").hidden){ closeRoute(); return true; }
@@ -2600,12 +2785,17 @@ window.atmBack = () => {
   if(!$("#sheet").hidden){ $("#close").click(); return true; }
   return false;
 };
-addEventListener("keydown", e => { if(e.key==="Escape"){ if(wx.active) closeWx(false); else if(!$("#sheet").hidden) $("#close").click(); } });
+addEventListener("keydown", e => { if(e.key==="Escape"){ if($("#shx")) closeShare(); else if(wx.active) closeWx(false); else if(!$("#sheet").hidden) $("#close").click(); } });
 
 map.on("load", () => {
   buildMapLayers(); renderLayerUI(); renderFavs(); syncApp();
   if(!favs.length) setTimeout(() => peekUpdate(true), 1200);
-  if(favs.length){ const f = favs[0]; setTimeout(() => openPlace(f.lat, f.lon, {name:f.name, sub:f.sub, zoom:6}), 500); }
+  const qp = new URLSearchParams(location.search), qlat = parseFloat(qp.get("lat")), qlon = parseFloat(qp.get("lon"));
+  if(isFinite(qlat) && isFinite(qlon) && Math.abs(qlat)<=90){
+    history.replaceState(null, "", location.pathname);
+    setTimeout(() => openPlace(qlat, qlon, {name: qp.get("n") || undefined, sub: qp.get("s") || "", zoom:6}), 500);
+  }
+  else if(favs.length){ const f = favs[0]; setTimeout(() => openPlace(f.lat, f.lon, {name:f.name, sub:f.sub, zoom:6}), 500); }
   else if(spinning) setTimeout(spinStep, 800);
   setTimeout(()=>{ $("#hint").style.opacity=0; }, 9000);
 });

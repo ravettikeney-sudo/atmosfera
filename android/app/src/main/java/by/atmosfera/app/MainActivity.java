@@ -3,6 +3,7 @@ package by.atmosfera.app;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -12,6 +13,8 @@ import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import org.json.JSONObject;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Locale;
 import android.view.View;
@@ -60,7 +63,7 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.5");
+        s.setUserAgentString(s.getUserAgentString() + " AtmosferaApp/1.6");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -146,6 +149,27 @@ public class MainActivity extends Activity {
             if (on != was || !at.equals(wasAt)) Weather.scheduleMorning(MainActivity.this);
             if (on && !was && Build.VERSION.SDK_INT >= 33 && !Weather.canNotify(MainActivity.this))
                 runOnUiThread(() -> requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY));
+        }
+        @JavascriptInterface public void shareImage(String base64, String text) {
+            try {
+                byte[] png = android.util.Base64.decode(base64, android.util.Base64.DEFAULT);
+                File dir = new File(getCacheDir(), "share"); dir.mkdirs();
+                File[] old = dir.listFiles(); if (old != null) for (File f : old) f.delete();
+                String name = "pogoda-" + System.currentTimeMillis() + ".png";
+                try (FileOutputStream out = new FileOutputStream(new File(dir, name))) { out.write(png); }
+                Uri uri = Uri.parse("content://" + ShareProvider.AUTHORITY + "/" + name);
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType("image/png");
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.putExtra(Intent.EXTRA_TEXT, text);
+                send.setClipData(ClipData.newRawUri("pogoda", uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent chooser = Intent.createChooser(send, "Поделиться погодой");
+                chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                runOnUiThread(() -> startActivity(chooser));
+            } catch (Exception e) {
+                js("toast('Не получилось отправить картинку')");
+            }
         }
         @JavascriptInterface public void setTheme(String t) {
             runOnUiThread(() -> {

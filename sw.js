@@ -1,5 +1,5 @@
 // Caches the app shell so it opens instantly; weather and imagery always come live from the network.
-const CACHE = "atmosfera-v11";
+const CACHE = "atmosfera-v12";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js", "https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css"];
 

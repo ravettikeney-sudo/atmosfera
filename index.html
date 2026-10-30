@@ -351,28 +351,26 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 :root[data-theme="light"] #stars{display:none}
 
 /* live sky at the top of the weather sheet */
-.sky{position:absolute;left:0;right:0;top:0;height:330px;z-index:0;pointer-events:none;overflow:hidden;
+.sky{position:absolute;left:0;right:0;top:0;height:330px;z-index:0;pointer-events:none;overflow:hidden;will-change:transform,opacity;
   -webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent);transition:background .8s}
 .sheet > .grab,.sheet > .sheet-head,.sheet > .sheet-body{position:relative;z-index:1}
 .sheet-head{border-bottom-color:transparent}
+:root:not([data-theme="light"]) .sheet-head,:root:not([data-theme="light"]) .now{text-shadow:0 1px 3px rgba(5,10,30,.45)}
 :root[data-theme="light"] .sky{opacity:.55}
-.sky[data-sky="day-clear"]{background:linear-gradient(180deg,#2f7fd6,#5fa6ea 55%,#8cc3f2)}
-.sky[data-sky="day-cloud"]{background:linear-gradient(180deg,#4d6283,#71859f 60%,#8c9db4)}
-.sky[data-sky="dusk"]{background:linear-gradient(180deg,#3a3f7a,#a75a8a 50%,#ff9a62)}
-.sky[data-sky="dawn"]{background:linear-gradient(180deg,#45619c,#d88aa0 55%,#ffcf8a)}
+.sky[data-sky="day-clear"]{background:linear-gradient(180deg,#1d5aa8,#3478c4 55%,#4a8ad0)}
+.sky[data-sky="day-cloud"]{background:linear-gradient(180deg,#3e5172,#566a88 60%,#647891)}
+.sky[data-sky="dusk"]{background:linear-gradient(180deg,#323872,#86507e 50%,#c47456)}
+.sky[data-sky="dawn"]{background:linear-gradient(180deg,#3b5390,#9a6a92 55%,#c98a6e)}
 .sky[data-sky="night-clear"]{background:linear-gradient(180deg,#081536,#13285a 70%,#1c3772)}
 .sky[data-sky="night-cloud"]{background:linear-gradient(180deg,#151d30,#26314a 70%,#2f3b55)}
 .sky[data-sky="rain"]{background:linear-gradient(180deg,#2c3c55,#45597a 60%,#5a6d8c)}
-.sky[data-sky="snow"]{background:linear-gradient(180deg,#6f86ab,#9db1cf 60%,#c3d1e6)}
+.sky[data-sky="snow"]{background:linear-gradient(180deg,#3a5279,#52698f 60%,#6680a5)}
 .sky[data-sky="storm"]{background:linear-gradient(180deg,#221d38,#3b2f57 60%,#4c3f68)}
-.sky[data-sky="fog"]{background:linear-gradient(180deg,#5e6a7d,#8592a5 60%,#a3aebd)}
+.sky[data-sky="fog"]{background:linear-gradient(180deg,#465163,#5b6678 60%,#6b7688)}
 .sky::before,.sky::after{content:"";position:absolute;inset:-40px 0 0;pointer-events:none}
-.sky[data-sky="rain"]::after,.sky[data-sky="storm"]::after{background-image:repeating-linear-gradient(103deg,rgba(210,230,255,.0) 0 9px,rgba(210,230,255,.38) 9px 10px,rgba(210,230,255,0) 10px 23px);background-size:120px 120px;animation:rainfall .55s linear infinite}
-.sky[data-sky="snow"]::after{background-image:radial-gradient(2.2px 2.2px at 20px 30px,#fff 60%,transparent 70%),radial-gradient(1.6px 1.6px at 70px 80px,#fff 60%,transparent 70%),radial-gradient(2px 2px at 110px 20px,#fff 60%,transparent 70%),radial-gradient(1.4px 1.4px at 150px 100px,#fff 60%,transparent 70%);background-size:170px 130px;animation:snowfall 6s linear infinite;opacity:.9}
+.sky canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .sky[data-sky="night-clear"]::after{background-image:radial-gradient(1.3px 1.3px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 33% 42%,#fff,transparent),radial-gradient(1.5px 1.5px at 58% 12%,#fff,transparent),radial-gradient(1px 1px at 72% 36%,#fff,transparent),radial-gradient(1.2px 1.2px at 88% 22%,#fff,transparent),radial-gradient(1px 1px at 46% 28%,#dfe8ff,transparent),radial-gradient(1.4px 1.4px at 22% 55%,#fff,transparent),radial-gradient(1px 1px at 92% 52%,#fff,transparent);animation:twinkle 4s ease-in-out infinite alternate}
 .sky[data-sky="day-clear"]::before{background:radial-gradient(160px 160px at 82% 18%,rgba(255,236,170,.55),transparent 70%);animation:glow 6s ease-in-out infinite alternate}
-.sky[data-sky="storm"]::before{background:rgba(220,225,255,.0);animation:lightning 7s infinite}
-.sky[data-sky="fog"]::after{background:repeating-linear-gradient(180deg,rgba(255,255,255,0) 0 22px,rgba(255,255,255,.12) 22px 36px);animation:fogdrift 14s linear infinite;background-size:100% 200px}
 @keyframes rainfall{to{background-position:-26px 120px}}
 @keyframes snowfall{to{background-position:30px 130px}}
 @keyframes twinkle{from{opacity:.55}to{opacity:1}}
@@ -596,7 +594,7 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 <div class="hint glass" id="hint">Нажмите на любую точку планеты, чтобы увидеть погоду</div>
 
 <aside class="sheet glass" id="sheet" hidden aria-live="polite">
-  <div class="sky" id="sky" aria-hidden="true"></div>
+  <div class="sky" id="sky" aria-hidden="true"><canvas id="skyfx"></canvas></div>
   <button class="grab" id="grab" aria-label="Свернуть или развернуть панель"></button>
   <div class="sheet-head">
     <div class="place">
@@ -1125,6 +1123,8 @@ function renderWeather(){
   $("#body").innerHTML = html;
 
   $("#sky").dataset.sky = skyKind(w);
+  skyFx.set(skyKind(w), w.current);
+  $("#body").onscroll = skyScroll; skyScroll();
   $("#qHist").onclick = () => showHistory();
   $("#qHist").onkeydown = e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showHistory(); } };
   $("#qMap").onclick = () => openWx();
@@ -2367,6 +2367,92 @@ function drawStars(){
 drawStars(); addEventListener("resize", () => { clearTimeout(drawStars.t); drawStars.t = setTimeout(drawStars, 300); });
 
 /* ================= live sky in the sheet ================= */
+/* sky effects: falling rain, snow, lightning and drifting fog drawn on a canvas behind the header only */
+function skyScroll(){
+  const y = $("#body").scrollTop, sky = $("#sky");
+  sky.style.transform = `translateY(${-Math.min(y, 340)}px)`;
+  sky.style.opacity = String(Math.max(0, 1 - y/300));
+}
+const skyFx = {
+  cv: null, ctx: null, kind: "", parts: [], raf: 0, last: 0, flash: 0, nextFlash: 0, w: 0, h: 0, wind: 0, amount: 0,
+  set(kind, c){
+    this.cv = this.cv || $("#skyfx"); this.ctx = this.ctx || this.cv.getContext("2d");
+    const k = (WMO[c.weather_code]||["","cloud"])[1];
+    const mmh = Math.max(c.precipitation || 0, k === "drizzle" ? 0.3 : k === "rain" ? 1 : k === "storm" ? 3 : 0);
+    this.amount = kind === "snow" ? clamp(0.35 + (c.snowfall || 0)*0.8, 0.35, 1) : clamp(0.2 + mmh/4, 0.2, 1);
+    this.wind = clamp(Math.sin(((c.wind_direction_10m || 0) + 180) * Math.PI/180) * (c.wind_speed_10m || 0) / 12, -0.6, 0.6);
+    this.kind = kind; this.parts = []; this.flash = 0; this.nextFlash = performance.now() + 2500;
+    this.resize(); this.start();
+  },
+  resize(){
+    const r = this.cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    this.w = r.width; this.h = r.height;
+    this.cv.width = Math.round(r.width*d); this.cv.height = Math.round(r.height*d);
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+  },
+  active(){ return ["rain","storm","snow","fog"].includes(this.kind) && !$("#sheet").hidden && !document.hidden; },
+  start(){
+    cancelAnimationFrame(this.raf); this.raf = 0;
+    this.ctx.clearRect(0, 0, this.w, this.h);
+    if(!["rain","storm","snow","fog"].includes(this.kind)) return;
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches){ this.step(0, true); return; }
+    this.last = performance.now();
+    const loop = t => { if(!this.active()){ this.raf = 0; return; } this.step(Math.min(0.05, (t - this.last)/1000)); this.last = t; this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  },
+  spawn(anywhere){
+    const W = this.w, H = this.h, k = this.kind;
+    if(k === "snow") return {x: Math.random()*W, y: anywhere ? Math.random()*H : -6, r: 0.8 + Math.random()*2.2, v: 18 + Math.random()*34, ph: Math.random()*6.28, sw: 0.6 + Math.random()*1.4, a: 0.55 + Math.random()*0.4};
+    if(k === "fog") return {x: Math.random()*W, y: 30 + Math.random()*(H*0.75), r: 70 + Math.random()*90, v: 6 + Math.random()*10, a: 0.07 + Math.random()*0.07};
+    const z = Math.random();
+    return {x: Math.random()*(W + 60) - 30, y: anywhere ? Math.random()*H : -20 - Math.random()*40, len: 7 + z*11, v: 420 + z*420, a: 0.16 + z*0.32, lw: 0.7 + z*0.7};
+  },
+  step(dt, still){
+    const ctx = this.ctx, W = this.w, H = this.h, k = this.kind;
+    if(!W || !H) { this.resize(); return; }
+    const target = k === "fog" ? 7 : k === "snow" ? Math.round(30 + 70*this.amount) : Math.round(45 + (k === "storm" ? 150 : 110)*this.amount);
+    while(this.parts.length < target) this.parts.push(this.spawn(true));
+    if(this.parts.length > target) this.parts.length = target;
+    ctx.clearRect(0, 0, W, H);
+    const t = performance.now()/1000;
+    if(k === "fog"){
+      for(const p of this.parts){
+        p.x += p.v*dt; if(p.x - p.r > W) { p.x = -p.r; }
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        g.addColorStop(0, `rgba(235,240,248,${p.a})`); g.addColorStop(1, "rgba(235,240,248,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r*1.6, p.r*0.6, 0, 0, Math.PI*2); ctx.fill();
+      }
+      return;
+    }
+    if(k === "snow"){
+      ctx.fillStyle = "#fff";
+      for(const p of this.parts){
+        p.y += p.v*dt; p.x += (Math.sin(t*p.sw + p.ph)*14 + this.wind*30)*dt;
+        if(p.y > H + 6 || p.x < -10 || p.x > W + 10) Object.assign(p, this.spawn(false));
+        ctx.globalAlpha = p.a; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    /* rain and storm: short streaks slanted by the wind */
+    const slant = this.wind;
+    ctx.lineCap = "round";
+    for(const p of this.parts){
+      p.y += p.v*dt; p.x += p.v*slant*dt;
+      if(p.y - p.len > H || p.x < -40 || p.x > W + 40) Object.assign(p, this.spawn(false));
+      ctx.strokeStyle = `rgba(205,222,255,${p.a})`; ctx.lineWidth = p.lw;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.len*slant, p.y - p.len); ctx.stroke();
+    }
+    if(k === "storm" && !still){
+      const now = performance.now();
+      if(now > this.nextFlash){ this.flash = 1; this.nextFlash = now + 5000 + Math.random()*9000; }
+      if(this.flash > 0.01){ ctx.fillStyle = `rgba(225,230,255,${0.32*this.flash})`; ctx.fillRect(0, 0, W, H); this.flash *= Math.pow(0.02, dt); }
+    }
+  }
+};
+addEventListener("resize", () => { if(skyFx.cv && skyFx.kind){ skyFx.resize(); } });
+document.addEventListener("visibilitychange", () => { if(!document.hidden && skyFx.kind && !skyFx.raf) skyFx.start(); });
+
 function skyKind(w){
   const c = w.current, k = (WMO[c.weather_code]||["","cloud"])[1];
   if(k === "storm") return "storm"; if(k === "snow") return "snow"; if(k === "rain" || k === "drizzle") return "rain"; if(k === "fog") return "fog";

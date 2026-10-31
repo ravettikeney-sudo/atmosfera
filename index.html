@@ -733,8 +733,8 @@ const BASES = {
 const OVERLAYS = {
   labels: {name:"Названия и границы", sub:"Страны, регионы, города — по-русски", sw:"linear-gradient(135deg,#253247,#536b8f)", def:true},
   temps:  {name:"Температура в городах", sub:"Сейчас, в 90 городах мира", sw:"linear-gradient(90deg,#3f9de8,#8ee6b0,#ffd35c,#ff6a3d)", def:true},
-  clouds: {name:"Облака сейчас", sub:"Спутники GOES и Himawari, каждые 10 мин", sw:"linear-gradient(135deg,#e9eef5,#7d93ad 60%,#28344a)", def:false},
-  ir:     {name:"Облака (инфракрасный)", sub:"Видно и ночью; высокие облака ярче", sw:"linear-gradient(135deg,#fff,#7c8ea8 50%,#000)", def:false},
+  clouds: {name:"Облака сейчас", sub:"Вся планета без швов, спутники EUMETSAT, NOAA, JMA", sw:"linear-gradient(135deg,#e9eef5,#7d93ad 60%,#28344a)", def:false},
+  ir:     {name:"Облака (инфракрасный)", sub:"Снимок целиком: высокие холодные облака ярче", sw:"linear-gradient(135deg,#fff,#7c8ea8 50%,#000)", def:false},
   radar:  {name:"Радар осадков", sub:"Дождь и снег за последние 2 часа", sw:"linear-gradient(135deg,#38c172,#ffd35c 50%,#e8455c)", def:false},
   precip: {name:"Осадки со спутника", sub:"Вся планета, NASA IMERG", sw:"linear-gradient(135deg,#2fa8ff,#7b5cff 50%,#ff4fa0)", def:false}
 };
@@ -788,21 +788,37 @@ function buildMapLayers(){
   applyOverlays();
 }
 
-/* geostationary satellites: GOES-East (Americas/Atlantic), GOES-West (Pacific), Himawari (Asia/Oceania) */
+/* clouds: EUMETSAT's seamless world cloud map (all geostationary satellites around the globe, IR 10.8 µm).
+   For «Облака сейчас» the grey ground is removed in the browser so only white clouds lie over any base map. */
 let satBust = "";
-const SATS = [
-  {id:"goes-e", vis:"GOES-East_ABI_GeoColor", visTms:"GoogleMapsCompatible_Level7", ir:"GOES-East_ABI_Band13_Clean_Infrared"},
-  {id:"goes-w", vis:"GOES-West_ABI_GeoColor", visTms:"GoogleMapsCompatible_Level7", ir:"GOES-West_ABI_Band13_Clean_Infrared"},
-  {id:"hima",   vis:"Himawari_AHI_Band13_Clean_Infrared", visTms:"GoogleMapsCompatible_Level6", ir:"Himawari_AHI_Band13_Clean_Infrared"}
-];
-function addSatellite(){
-  for(const s of SATS) for(const kind of ["vis","ir"]){
-    const tms = kind==="vis" ? s.visTms : "GoogleMapsCompatible_Level6";
-    addRaster(`${kind}-${s.id}`,{type:"raster",tiles:[gibs(s[kind],tms,"png",satBust)],tileSize:256,maxzoom:tms.endsWith("7")?7:6,attribution:"NASA GIBS, NOAA GOES, JMA Himawari"},{paint:{"raster-opacity": kind==="ir" ? .75 : 1,"raster-fade-duration":300}});
+const SATS = [{id:"world"}];
+const EUM_WMS = "https://view.eumetsat.int/geoserver/wms?service=WMS&request=GetMap&version=1.3.0&layers=mumi:worldcloudmap_ir108&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256";
+const MERC = 20037508.342789244;
+const tileBBox = (z, x, y) => { const sz = 2*MERC/2**z; return [-MERC + x*sz, MERC - (y+1)*sz, -MERC + (x+1)*sz, MERC - y*sz].join(","); };
+maplibregl.addProtocol("eumclouds", async (params, abortController) => {
+  const m = params.url.match(/eumclouds:\/\/(\d+)\/(\d+)\/(\d+)/); const [z, x, y] = [+m[1], +m[2], +m[3]];
+  const r = await fetch(`${EUM_WMS}&bbox=${tileBBox(z, x, y)}${satBust ? "&_=" + satBust : ""}`, {signal: abortController.signal});
+  if(!r.ok) throw new Error("clouds " + r.status);
+  const bmp = await createImageBitmap(await r.blob());
+  const cv = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(256, 256) : Object.assign(document.createElement("canvas"), {width:256, height:256});
+  const ctx = cv.getContext("2d"); ctx.drawImage(bmp, 0, 0, 256, 256);
+  const img = ctx.getImageData(0, 0, 256, 256), d = img.data;
+  for(let i = 0; i < d.length; i += 4){
+    const L = d[i], a0 = d[i+3]/255;
+    let a = (L - 92) / (205 - 92); a = a <= 0 ? 0 : a >= 1 ? 1 : Math.pow(a, 0.8);
+    const shade = 228 + 27*a;                       /* thin cloud slightly grey-blue, thick cloud white */
+    d[i] = shade - 6*(1-a); d[i+1] = shade - 3*(1-a); d[i+2] = shade; d[i+3] = 238*a*a0;
   }
-  $("#satStamp").textContent = "Облака обновлены: " + new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"});
+  ctx.putImageData(img, 0, 0);
+  const blob = cv.convertToBlob ? await cv.convertToBlob({type:"image/png"}) : await new Promise(res => cv.toBlob(res, "image/png"));
+  return {data: await blob.arrayBuffer()};
+});
+function addSatellite(){
+  addRaster("vis-world", {type:"raster", tiles:[`eumclouds://{z}/{x}/{y}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":1, "raster-fade-duration":300}});
+  addRaster("ir-world", {type:"raster", tiles:[`${EUM_WMS}&bbox={bbox-epsg-3857}${satBust ? "&_=" + satBust : ""}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":.85, "raster-fade-duration":300}});
+  $("#satStamp").textContent = "Облака обновлены: " + new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}) + " · снимок раз в 3 часа";
 }
-setInterval(()=>{ if(on.clouds||on.ir){ satBust="?t="+Date.now(); addSatellite(); applyOverlays(); } }, 10*60*1000);
+setInterval(()=>{ if(on.clouds||on.ir){ satBust=String(Date.now()); addSatellite(); applyOverlays(); } }, 30*60*1000);
 
 function vis(id, v){ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",v?"visible":"none"); }
 function applyOverlays(){
@@ -834,7 +850,6 @@ function renderLayerUI(){
     if(k==="clouds" && on.clouds) on.ir=false;
     if(k==="ir" && on.ir) on.clouds=false;
     applyOverlays(); renderLayerUI();
-    if((k==="clouds"||k==="ir") && on[k]) toast("Живые облака видны над Америкой, Тихим океаном, Азией и Австралией. Для Европы и Африки включите «Погоду на карте» или «Землю сегодня».");
   }));
 }
 $("#layersBtn").onclick = () => { const p=$("#layers"); p.hidden=!p.hidden; $("#layersBtn").setAttribute("aria-expanded", !p.hidden); };

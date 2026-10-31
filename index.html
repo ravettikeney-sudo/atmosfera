@@ -347,6 +347,26 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 
 /* stars behind the globe */
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#season{position:fixed;inset:0;z-index:0;pointer-events:none}
+#gwind{position:fixed;inset:0;z-index:1;pointer-events:none}
+:root[data-theme="light"] #season{display:none}
+#splash{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,19,48,0) 0,rgba(10,19,48,.55) 70%);transition:opacity .7s;cursor:pointer}
+#splash .sp-in{display:flex;flex-direction:column;align-items:center;gap:10px;animation:spIn 1.1s cubic-bezier(.2,.8,.2,1) both;text-align:center}
+#splash .sp-logo{filter:drop-shadow(0 0 18px rgba(124,196,255,.6))}
+#splash .sp-title{font:800 30px/1 var(--display);letter-spacing:.32em;color:#fff;text-shadow:0 2px 20px rgba(124,196,255,.55);padding-left:.32em}
+#splash .sp-sub{font:500 14px var(--body);letter-spacing:.12em;color:#b9d4f5}
+#splash .sp-skip{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom,0px));font-size:12px;color:rgba(200,220,255,.6)}
+#splash.fade .sp-in,#splash.fade .sp-skip{opacity:0;transform:translateY(-20px);transition:opacity .9s,transform .9s}
+#splash.out{opacity:0;pointer-events:none}
+@keyframes spIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.rec{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border-radius:14px;border:1px solid var(--line);background:var(--raise);text-align:left;margin-top:8px}
+.rec .ri{font-size:24px;flex:none;width:34px;text-align:center}
+.rec .rt{flex:1;min-width:0}
+.rec .rt small{display:block;font-size:12px;color:var(--k,var(--muted));font-weight:600}
+.rec .rt b{display:block;font-size:15px;overflow-wrap:anywhere}
+.rec .rt em{display:block;font-style:normal;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.rec .rv{font:700 20px var(--display);white-space:nowrap;color:var(--k,var(--fg))}
+#records{max-height:calc(100vh - 110px)}
 #map{z-index:0}
 :root[data-theme="light"] #stars{display:none}
 
@@ -507,7 +527,10 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 </head>
 <body>
 <canvas id="stars" aria-hidden="true"></canvas>
+<canvas id="season" aria-hidden="true" hidden></canvas>
 <div id="map" role="application" aria-label="Интерактивный глобус"></div>
+<canvas id="gwind" aria-hidden="true" hidden></canvas>
+<div id="splash" aria-hidden="true"><div class="sp-in"><div class="sp-logo"><svg width="54" height="54" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="#0b1c33" stroke="#7cc4ff" stroke-width="4"/><path d="M10 36c8-6 16 6 24 0s14-8 20-2" fill="none" stroke="#ffb35c" stroke-width="4" stroke-linecap="round"/></svg></div><div class="sp-title">АТМОСФЕРА</div><div class="sp-sub">погода всей планеты</div></div><div class="sp-skip">коснитесь, чтобы пропустить</div></div>
 <canvas id="wxIso" hidden></canvas>
 <canvas id="wxWind" hidden></canvas>
 
@@ -538,6 +561,11 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 </div>
 
 <div class="dock">
+  <div class="timeline glass" id="cloudTL" hidden>
+    <button class="play" id="cplay" aria-label="Показать облака за сутки"></button>
+    <input type="range" id="cframe" min="0" max="8" value="8" aria-label="Время снимка облаков">
+    <span id="cframeTime">—</span>
+  </div>
   <div class="timeline glass" id="timeline" hidden>
     <button class="play" id="play" aria-label="Воспроизвести анимацию радара"></button>
     <input type="range" id="frame" min="0" max="0" value="0" aria-label="Время снимка радара">
@@ -552,6 +580,9 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
     <div class="sep"></div>
     <h3>События на Земле</h3>
     <div id="eventList"></div>
+    <div class="stamp" id="liStamp" hidden></div>
+    <button class="addcur" id="recBtn" style="margin-top:8px">🏆 Рекорды мира сейчас</button>
+    <div class="legend" id="gwLegend" hidden><span>ветер</span><i style="background:linear-gradient(90deg,#c8e1ff,#96e6ff,#ffe28c,#ff8264)"></i><span>сильный</span></div>
     <div class="legend" id="tempLegend" hidden><span>−30°</span><i id="legendBar"></i><span>+40°</span></div>
     <div class="stamp" id="satStamp"></div>
   </div>
@@ -582,6 +613,7 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 <div class="reticle" id="reticle" hidden></div>
 <button class="peek glass" id="peek" hidden aria-live="polite" aria-label="Погода в центре экрана, нажмите для подробностей"><div id="peekBody">Загружаю погоду…</div></button>
 <section class="settings glass" id="settings" hidden aria-label="Настройки"></section>
+<section class="settings glass" id="records" hidden aria-label="Рекорды мира"></section>
 <section class="route glass" id="route" hidden aria-label="Погода по маршруту"></section>
 <section class="voice glass" id="voice" hidden aria-live="polite" aria-label="Голосовой помощник">
   <div class="vq"><span class="orb" aria-hidden="true"></span><div class="vt"><b id="vTitle">Слушаю…</b><small id="vSub"></small></div>
@@ -788,42 +820,11 @@ function buildMapLayers(){
   applyOverlays();
 }
 
-/* clouds: EUMETSAT's seamless world cloud map (all geostationary satellites around the globe, IR 10.8 µm).
-   For «Облака сейчас» the grey ground is removed in the browser so only white clouds lie over any base map. */
-let satBust = "";
-const SATS = [{id:"world"}];
-const EUM_WMS = "https://view.eumetsat.int/geoserver/wms?service=WMS&request=GetMap&version=1.3.0&layers=mumi:worldcloudmap_ir108&styles=&format=image/png&transparent=true&crs=EPSG:3857&width=256&height=256";
-const MERC = 20037508.342789244;
-const tileBBox = (z, x, y) => { const sz = 2*MERC/2**z; return [-MERC + x*sz, MERC - (y+1)*sz, -MERC + (x+1)*sz, MERC - y*sz].join(","); };
-maplibregl.addProtocol("eumclouds", async (params, abortController) => {
-  const m = params.url.match(/eumclouds:\/\/(\d+)\/(\d+)\/(\d+)/); const [z, x, y] = [+m[1], +m[2], +m[3]];
-  const r = await fetch(`${EUM_WMS}&bbox=${tileBBox(z, x, y)}${satBust ? "&_=" + satBust : ""}`, {signal: abortController.signal});
-  if(!r.ok) throw new Error("clouds " + r.status);
-  const bmp = await createImageBitmap(await r.blob());
-  const cv = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(256, 256) : Object.assign(document.createElement("canvas"), {width:256, height:256});
-  const ctx = cv.getContext("2d"); ctx.drawImage(bmp, 0, 0, 256, 256);
-  const img = ctx.getImageData(0, 0, 256, 256), d = img.data;
-  for(let i = 0; i < d.length; i += 4){
-    const L = d[i], a0 = d[i+3]/255;
-    let a = (L - 92) / (205 - 92); a = a <= 0 ? 0 : a >= 1 ? 1 : Math.pow(a, 0.8);
-    const shade = 228 + 27*a;                       /* thin cloud slightly grey-blue, thick cloud white */
-    d[i] = shade - 6*(1-a); d[i+1] = shade - 3*(1-a); d[i+2] = shade; d[i+3] = 238*a*a0;
-  }
-  ctx.putImageData(img, 0, 0);
-  const blob = cv.convertToBlob ? await cv.convertToBlob({type:"image/png"}) : await new Promise(res => cv.toBlob(res, "image/png"));
-  return {data: await blob.arrayBuffer()};
-});
-function addSatellite(){
-  addRaster("vis-world", {type:"raster", tiles:[`eumclouds://{z}/{x}/{y}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":1, "raster-fade-duration":300}});
-  addRaster("ir-world", {type:"raster", tiles:[`${EUM_WMS}&bbox={bbox-epsg-3857}${satBust ? "&_=" + satBust : ""}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":.85, "raster-fade-duration":300}});
-  $("#satStamp").textContent = "Облака обновлены: " + new Date().toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"}) + " · снимок раз в 3 часа";
-}
-setInterval(()=>{ if(on.clouds||on.ir){ satBust=String(Date.now()); addSatellite(); applyOverlays(); } }, 30*60*1000);
 
 function vis(id, v){ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",v?"visible":"none"); }
 function applyOverlays(){
   for(const k of Object.keys(BASES)) vis("base-"+k, k===base);
-  for(const s of SATS){ vis("vis-"+s.id, on.clouds); vis("ir-"+s.id, on.ir && !on.clouds); }
+  cloudsApply(); globeWindApply(); lightningApply();
   vis("precip", on.precip);
   (map.__labelIds||[]).forEach(id => vis(id, on.labels));
   if(on.radar) startRadar(); else stopRadar();
@@ -1665,7 +1666,7 @@ function setWxCanvas(ext){
 async function openWx(){
   if(wx.loading) return;
   const lat = current ? current.lat : map.getCenter().lat, lon = current ? current.lon : map.getCenter().lng;
-  wx.active = true; wx.center = {lat, lon}; $("#peek").hidden = true; $("#reticle").hidden = true;
+  wx.active = true; wx.center = {lat, lon}; globeWindApply(); $("#cloudTL").hidden = true; $("#peek").hidden = true; $("#reticle").hidden = true;
   document.body.classList.add("wxmode"); $("#wxBtn").setAttribute("aria-pressed","true");
   $("#sheet").hidden = true; document.body.classList.remove("sheet-open","sheet-min");
   $("#layers").hidden = true; $("#hint").style.opacity = 0;
@@ -1724,7 +1725,7 @@ function wxPlay(force){
   wx.timer = setInterval(()=>{ wx.t += 0.1; if(wx.t > HOURS) wx.t = 0; drawWx(); }, 110);
 }
 function closeWx(keepSheet){
-  wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop(); setTimeout(()=>peekUpdate(true), 700);
+  wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop(); globeWindApply(); cloudsApply(); setTimeout(()=>peekUpdate(true), 700);
   $("#wxPlay").innerHTML=PLAY_ICON;
   if(map.getLayer("wxcanvas")) map.removeLayer("wxcanvas");
   if(map.getSource("wxcanvas")) map.removeSource("wxcanvas");
@@ -2067,6 +2068,8 @@ function renderSettings(){
   box.innerHTML = `<h3><span>Настройки</span><button class="mini" id="setClose" aria-label="Закрыть настройки"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h3>
     <div class="srow"><span>Оформление</span>${seg("Оформление",[["auto","Авто"],["light","Светлое"],["dark","Тёмное"]],settings.theme)}</div>
     <div class="srow"><span>Градусы</span>${seg("Градусы",[["C","°C"],["F","°F"]],units)}</div>
+    <label class="srow sw"><span>Заставка при запуске<small>Полёт из космоса к вашему городу</small></span><input type="checkbox" id="setIntro" ${settings.intro !== false ? "checked" : ""}></label>
+    <label class="srow sw"><span>Сезонное оформление<small>Сейчас: ${SEASON_NAME[seasonNow()]} — ${({winter:"снег", newyear:"снег и огоньки", spring:"лепестки", summer:"светлячки", autumn:"листья"})[seasonNow()]} в космосе вокруг Земли</small></span><input type="checkbox" id="setSeason" ${settings.season !== false ? "checked" : ""}></label>
     <label class="srow sw"><span>Погода в центре экрана<small>Крутите глобус — карточка покажет погоду места под прицелом</small></span><input type="checkbox" id="setPeek" ${settings.peek?"checked":""}></label>
     <label class="srow sw"><span>Уведомления о дожде и опасной погоде<small>${inApp ? (favs.length ? `Для главного города: ${esc(favs[0].name)}` : "Сначала сохраните главный город в «Моих городах»") : "Работают в Android-приложении"}</small></span><input type="checkbox" id="setNotify" ${settings.notify?"checked":""} ${inApp?"":"disabled"}></label>
     <label class="srow sw"><span>Утренняя сводка<small>${inApp ? `Каждое утро — погода на день одной строкой` : "Работает в Android-приложении"}</small></span>
@@ -2079,6 +2082,8 @@ function renderSettings(){
   $("#setShare").onclick = () => { closeSettings(); shareApp(); };
   box.querySelectorAll('[aria-label="Оформление"] button').forEach(b => b.onclick = () => { settings.theme = b.dataset.v; saveSettings(); applyTheme(); renderSettings(); });
   box.querySelectorAll('[aria-label="Градусы"] button').forEach(b => b.onclick = () => { if(units !== b.dataset.v) $("#units").click(); renderSettings(); });
+  $("#setIntro").onchange = e => { settings.intro = e.target.checked; saveSettings(); };
+  $("#setSeason").onchange = e => { settings.season = e.target.checked; saveSettings(); seasonApply(); };
   $("#setPeek").onchange = e => { settings.peek = e.target.checked; saveSettings(); peekUpdate(true); };
   $("#setMorning").onchange = e => {
     if(e.target.checked && !favs.length){ e.target.checked = false; toast("Сначала сохраните главный город: откройте его и нажмите «Сохранить город»."); return; }
@@ -2924,6 +2929,7 @@ window.atmBack = () => {
   if(!$("#cities").hidden){ closeCities(); return true; }
   if($("#hBack")){ renderWeather(); return true; }
   if(!$("#settings").hidden){ closeSettings(); return true; }
+  if(!$("#records").hidden){ $("#records").hidden = true; return true; }
   if($("#mBack")){ renderWeather(); return true; }
   if(!$("#layers").hidden){ $("#layers").hidden = true; $("#layersBtn").setAttribute("aria-expanded","false"); return true; }
   if(wx.active){ closeWx(false); return true; }
@@ -2932,16 +2938,367 @@ window.atmBack = () => {
 };
 addEventListener("keydown", e => { if(e.key==="Escape"){ if($("#shx")) closeShare(); else if(wx.active) closeWx(false); else if(!$("#sheet").hidden) $("#close").click(); } });
 
+Object.assign(OVERLAYS, {
+  windglobe: {name:"Ветер по всей планете", sub:"Живые потоки ветра у земли, обновляются раз в 3 часа", sw:"linear-gradient(120deg,#0e2a55,#5fc4ff 45%,#ffe28c 75%,#ff8c6e)", def:false},
+  lightning: {name:"Молнии и грозы", sub:"Вспышки со спутника MTG над Европой, Африкой и Атлантикой; грозы по модели для всего мира", sw:"radial-gradient(circle,#fff6a8,#ffd23c 35%,#3b2f57 75%)", def:false, ev:true}
+});
+if(on.windglobe === undefined) on.windglobe = false;
+if(on.lightning === undefined) on.lightning = false;
+/* =====================================================================
+   Clouds with depth: shading + shadows, and a 24-hour timelapse
+   ===================================================================== */
+let satBust = "";
+const SATS = [];
+const EUM = "https://view.eumetsat.int/geoserver/wms?service=WMS&request=GetMap&version=1.3.0&styles=&format=image/png&transparent=true&crs=EPSG:3857";
+const EUM_CLOUDS = EUM + "&layers=mumi:worldcloudmap_ir108";
+const MERC = 20037508.342789244, CM = 10; /* CM: pixel margin fetched around each tile so shading and shadows have no seams */
+const tileBBox = (z, x, y, m=0) => { const sz = 2*MERC/2**z, e = sz*m/256; return [-MERC + x*sz - e, MERC - (y+1)*sz - e, -MERC + (x+1)*sz + e, MERC - y*sz + e].join(","); };
+const cloudCache = new Map();
+function cloudTile(z, x, y, t){
+  const key = `${z}/${x}/${y}/${t||""}/${satBust}`;
+  if(cloudCache.has(key)) return cloudCache.get(key);
+  const pr = (async () => {
+    const W = 256 + 2*CM;
+    const r = await fetch(`${EUM_CLOUDS}&width=${W}&height=${W}&bbox=${tileBBox(z, x, y, CM)}${t ? "&time="+t : ""}${satBust ? "&_="+satBust : ""}`);
+    if(!r.ok) throw new Error("clouds " + r.status);
+    const bmp = await createImageBitmap(await r.blob());
+    const mk = (w, h) => typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w, h) : Object.assign(document.createElement("canvas"), {width:w, height:h});
+    const src = mk(W, W), sx = src.getContext("2d"); sx.drawImage(bmp, 0, 0, W, W);
+    const sd = sx.getImageData(0, 0, W, W).data, A = new Float32Array(W*W);
+    for(let i = 0, p = 0; i < sd.length; i += 4, p++){ let a = (sd[i] - 92)/(205 - 92); a = a <= 0 ? 0 : a >= 1 ? 1 : Math.pow(a, .8); A[p] = a * sd[i+3]/255; }
+    const out = mk(256, 256), ox = out.getContext("2d"), img = ox.createImageData(256, 256), d = img.data;
+    const sh = mk(256, 256), hx = sh.getContext("2d"), simg = hx.createImageData(256, 256), s = simg.data;
+    const at = (px, py) => A[py*W + px];
+    for(let y = 0; y < 256; y++) for(let x = 0; x < 256; x++){
+      const X = x + CM, Y = y + CM, a = at(X, Y), o = (y*256 + x)*4;
+      /* light from the upper left: brighter tops, darker undersides -> clouds look puffy */
+      const relief = (at(X-2, Y-2) - at(X+2, Y+2));
+      const shade = Math.max(150, Math.min(255, 226 + 29*a - 70*relief));
+      d[o] = shade - 8*(1-a); d[o+1] = shade - 4*(1-a); d[o+2] = Math.min(255, shade + 2); d[o+3] = 240*a;
+      /* shadow cast down-right on the ground, softly blurred */
+      let sa = 0; for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++) sa += at(X - 6 + dx, Y - 7 + dy);
+      sa = sa/9;
+      s[o] = 6; s[o+1] = 12; s[o+2] = 30; s[o+3] = 120*sa*(1 - a*.6);
+    }
+    ox.putImageData(img, 0, 0); hx.putImageData(simg, 0, 0);
+    const blob = c => c.convertToBlob ? c.convertToBlob({type:"image/png"}) : new Promise(res => c.toBlob(res, "image/png"));
+    return {cloud: await (await blob(out)).arrayBuffer(), shadow: await (await blob(sh)).arrayBuffer()};
+  })();
+  cloudCache.set(key, pr); pr.catch(() => cloudCache.delete(key));
+  if(cloudCache.size > 400) cloudCache.delete(cloudCache.keys().next().value);
+  return pr;
+}
+for(const [proto, part] of [["eumclouds","cloud"],["eumshadow","shadow"]])
+  maplibregl.addProtocol(proto, async params => {
+    const m = params.url.match(/:\/\/(\d+)\/(\d+)\/(\d+)(?:\?t=([^&]*))?/);
+    const r = await cloudTile(+m[1], +m[2], +m[3], m[4] ? decodeURIComponent(m[4]) : "");
+    return {data: r[part].slice(0)};
+  });
+
+/* frames of the last 24 hours, every 3 hours (the world cloud map is published every 3 h, about 3.5 h late) */
+const ctl = {frames:[], idx:0, added:new Set(), timer:null};
+function cloudFrames(){
+  const last = Math.floor((Date.now() - 3.5*3600e3)/(3*3600e3))*3*3600e3;
+  return Array.from({length:9}, (_, i) => new Date(last - (8-i)*3*3600e3).toISOString().slice(0,19) + "Z");
+}
+function addCloudFrame(i){
+  if(ctl.added.has(i)) return;
+  const t = encodeURIComponent(ctl.frames[i]);
+  addRaster(`shd-${i}`, {type:"raster", tiles:[`eumshadow://{z}/{x}/{y}?t=${t}`], tileSize:256, maxzoom:6}, {paint:{"raster-opacity":0, "raster-opacity-transition":{duration:0}, "raster-fade-duration":0}});
+  addRaster(`cld-${i}`, {type:"raster", tiles:[`eumclouds://{z}/{x}/{y}?t=${t}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":0, "raster-opacity-transition":{duration:0}, "raster-fade-duration":0}});
+  ctl.added.add(i);
+}
+function resetCloudFrames(){
+  for(const i of ctl.added){ for(const id of [`shd-${i}`, `cld-${i}`]){ if(map.getLayer(id)) map.removeLayer(id); if(map.getSource(id)) map.removeSource(id); } }
+  ctl.added.clear(); ctl.frames = cloudFrames(); ctl.idx = ctl.frames.length - 1;
+  $("#cframe").max = ctl.frames.length - 1;
+}
+function showCloudFrame(i){
+  ctl.idx = i; $("#cframe").value = i;
+  for(const k of ctl.added){
+    const v = on.clouds ? "visible" : "none";
+    for(const id of [`shd-${k}`, `cld-${k}`]) if(map.getLayer(id)){ map.setLayoutProperty(id, "visibility", v); map.setPaintProperty(id, "raster-opacity", k === i ? 1 : 0); }
+  }
+  const dt = new Date(ctl.frames[i]), loc = current?.wx ? new Date(dt.getTime() + current.wx.utc_offset_seconds*1000) : null;
+  const hm = d => d.toISOString().slice(11,16), today = new Date().toISOString().slice(0,10);
+  const label = loc ? hm(loc) : dt.toLocaleTimeString("ru", {hour:"2-digit", minute:"2-digit"});
+  $("#cframeTime").textContent = (dt.toISOString().slice(0,10) === today ? "" : "вчера ") + label;
+  $("#satStamp").textContent = `Облака: снимок ${dt.toLocaleString("ru", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})} · обновляется раз в 3 часа`;
+}
+function cloudsApply(){
+  if(!ctl.frames.length) resetCloudFrames();
+  if(on.clouds){ addCloudFrame(ctl.idx); showCloudFrame(ctl.idx); }
+  else { for(const k of ctl.added) for(const id of [`shd-${k}`, `cld-${k}`]) vis(id, false); cloudPause(); }
+  vis("ir-world", on.ir && !on.clouds);
+  $("#cloudTL").hidden = !on.clouds || wx.active;
+}
+function cloudPause(){ clearInterval(ctl.timer); ctl.timer = null; $("#cplay").innerHTML = PLAY_ICON; $("#cplay").setAttribute("aria-label", "Показать облака за сутки"); }
+$("#cplay").innerHTML = PLAY_ICON;
+$("#cplay").onclick = () => {
+  if(ctl.timer){ cloudPause(); return; }
+  for(let i = 0; i < ctl.frames.length; i++) addCloudFrame(i);
+  showCloudFrame(ctl.idx);
+  $("#cplay").innerHTML = PAUSE_ICON; $("#cplay").setAttribute("aria-label", "Пауза");
+  let first = true;
+  ctl.timer = setInterval(() => {
+    const n = ctl.frames.length, next = ctl.idx >= n - 1 ? 0 : ctl.idx + 1;
+    showCloudFrame(next);
+    if(first && next === n - 1){ first = false; }
+  }, 900);
+};
+$("#cframe").oninput = e => { cloudPause(); const i = +e.target.value; addCloudFrame(i); showCloudFrame(i); };
+function addSatellite(){
+  addRaster("ir-world", {type:"raster", tiles:[`${EUM_CLOUDS}&width=256&height=256&bbox={bbox-epsg-3857}${satBust ? "&_=" + satBust : ""}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":.85, "raster-fade-duration":300}});
+}
+setInterval(() => {
+  const f = cloudFrames();
+  if(ctl.frames.length && f[f.length-1] !== ctl.frames[ctl.frames.length-1] && (on.clouds || on.ir)){
+    satBust = String(Date.now()); cloudCache.clear(); cloudPause(); resetCloudFrames(); addSatellite(); applyOverlays();
+  }
+}, 20*60*1000);
+
+/* =====================================================================
+   One coarse world grid (every 12°): wind for the animation, storms
+   ===================================================================== */
+const GSTEP = 12, GLON = 30, GLAT = 13;  /* lon -180..168, lat -72..72 */
+const globe = {g:null, loading:null};
+async function loadGlobe(){
+  if(globe.g && Date.now() - globe.g.at < 3*3600e3) return globe.g;
+  try{ const c = JSON.parse(localStorage.getItem("atm:globe") || "null"); if(c && Date.now() - c.at < 3*3600e3){ globe.g = c; return c; } }catch(e){}
+  if(globe.loading) return globe.loading;
+  globe.loading = (async () => {
+    const lats = [], lons = [];
+    for(let j = 0; j < GLAT; j++) for(let i = 0; i < GLON; i++){ lats.push(-72 + j*GSTEP); lons.push(-180 + i*GSTEP); }
+    const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lats.join(",")}&longitude=${lons.join(",")}&current=wind_speed_10m,wind_direction_10m,weather_code,temperature_2m&wind_speed_unit=ms`, 30000, 2);
+    const arr = Array.isArray(d) ? d : [d], U = [], V = [], C = [], T = [];
+    arr.forEach(r => { const c = r.current, s = c.wind_speed_10m || 0, a = (c.wind_direction_10m || 0)*Math.PI/180;
+      U.push(+(-s*Math.sin(a)).toFixed(2)); V.push(+(-s*Math.cos(a)).toFixed(2)); C.push(c.weather_code); T.push(c.temperature_2m); });
+    const g = {at:Date.now(), U, V, C, T};
+    try{ localStorage.setItem("atm:globe", JSON.stringify(g)); }catch(e){}
+    globe.g = g; return g;
+  })().finally(() => { globe.loading = null; });
+  return globe.loading;
+}
+function windAt(lng, lat){
+  const g = globe.g; if(!g) return [0, 0];
+  const fi = ((lng + 180)/GSTEP % GLON + GLON) % GLON, fj = Math.max(0, Math.min(GLAT - 1.001, (lat + 72)/GSTEP));
+  const i0 = Math.floor(fi), i1 = (i0 + 1) % GLON, j0 = Math.floor(fj), j1 = j0 + 1, a = fi - i0, b = fj - j0;
+  const v = (A) => (A[j0*GLON+i0]*(1-a) + A[j0*GLON+i1]*a)*(1-b) + (A[j1*GLON+i0]*(1-a) + A[j1*GLON+i1]*a)*b;
+  return [v(g.U), v(g.V)];
+}
+
+/* ---- the animation: glowing streaks drifting over the whole globe ---- */
+const gw = {cv:$("#gwind"), parts:[], raf:0, moving:false};
+function gwSpawn(){ return {x: Math.random()*innerWidth, y: Math.random()*innerHeight, age: Math.random()*60, max: 60 + Math.random()*90}; }
+function gwResize(){ const d = Math.min(2, devicePixelRatio||1); gw.cv.width = innerWidth*d; gw.cv.height = innerHeight*d; gw.cv.getContext("2d").setTransform(d,0,0,d,0,0); gw.parts = []; }
+function gwFrame(){
+  gw.raf = requestAnimationFrame(gwFrame);
+  const ctx = gw.cv.getContext("2d"), W = innerWidth, H = innerHeight;
+  if(gw.moving || !globe.g){ ctx.clearRect(0, 0, W, H); return; }
+  ctx.globalCompositeOperation = "destination-in"; ctx.fillStyle = "rgba(0,0,0,.93)"; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = "source-over"; ctx.lineWidth = 1.3; ctx.lineCap = "round";
+  const target = innerWidth < 760 ? 900 : 1600;
+  while(gw.parts.length < target) gw.parts.push(gwSpawn());
+  const buckets = [[],[],[],[]];
+  for(const p of gw.parts){
+    if(++p.age > p.max){ Object.assign(p, gwSpawn(), {age:0}); continue; }
+    let ll = null; try{ ll = map.unproject([p.x, p.y]); }catch(err){}
+    if(!ll || !isFinite(ll.lat)){ Object.assign(p, gwSpawn(), {age:0}); continue; }
+    const back = map.project(ll);
+    if(Math.abs(back.x - p.x) > 1.5 || Math.abs(back.y - p.y) > 1.5){ Object.assign(p, gwSpawn(), {age:p.max - 2}); continue; }
+    const [u, v] = windAt(ll.lng, ll.lat), sp = Math.hypot(u, v);
+    if(sp < 0.3){ p.age += 3; continue; }
+    if(Math.abs(ll.lat) > 84){ Object.assign(p, gwSpawn(), {age:0}); continue; }
+    const e = 0.08, q = map.project([ll.lng + u/sp*e/Math.max(.2, Math.cos(ll.lat*Math.PI/180)), Math.max(-85, Math.min(85, ll.lat + v/sp*e))]);
+    let dx = q.x - p.x, dy = q.y - p.y; const L = Math.hypot(dx, dy) || 1, px = Math.min(5, 0.35 + sp*0.28);
+    dx = dx/L*px; dy = dy/L*px;
+    buckets[sp < 4 ? 0 : sp < 8 ? 1 : sp < 13 ? 2 : 3].push(p.x, p.y, p.x + dx, p.y + dy);
+    p.x += dx; p.y += dy;
+  }
+  const cols = ["rgba(200,225,255,.45)","rgba(150,230,255,.75)","rgba(255,226,140,.85)","rgba(255,130,100,.95)"];
+  buckets.forEach((b, i) => { if(!b.length) return; ctx.strokeStyle = cols[i]; ctx.beginPath(); for(let j = 0; j < b.length; j += 4){ ctx.moveTo(b[j], b[j+1]); ctx.lineTo(b[j+2], b[j+3]); } ctx.stroke(); });
+}
+function globeWindApply(){
+  const want = on.windglobe && !wx.active;
+  gw.cv.hidden = !want;
+  if(want){
+    if(!gw.raf){ gwResize(); gwFrame(); }
+    loadGlobe().catch(() => { toast("Не удалось загрузить ветер. Попробуйте чуть позже."); on.windglobe = false; renderLayerUI(); globeWindApply(); });
+  } else if(gw.raf){ cancelAnimationFrame(gw.raf); gw.raf = 0; gw.cv.getContext("2d").clearRect(0, 0, innerWidth, innerHeight); }
+  $("#gwLegend").hidden = !want;
+}
+map.on("movestart", () => { gw.moving = true; });
+map.on("moveend", () => { gw.moving = false; gw.parts = []; });
+addEventListener("resize", () => { if(gw.raf) gwResize(); });
+document.addEventListener("visibilitychange", () => { if(document.hidden && gw.raf){ cancelAnimationFrame(gw.raf); gw.raf = 0; } else if(!document.hidden) globeWindApply(); });
+
+/* =====================================================================
+   Lightning: real flashes from the MTG satellite (Europe, Africa, Atlantic)
+   + thunderstorms from the forecast model for the rest of the world
+   ===================================================================== */
+let liBust = String(Math.floor(Date.now()/300000));
+function addLightning(){
+  addRaster("ev-lightning", {type:"raster", tiles:[`${EUM}&layers=mtg_fd:li_afa&width=256&height=256&bbox={bbox-epsg-3857}&_=${liBust}`], tileSize:256, maxzoom:7, attribution:"Молнии © EUMETSAT MTG"}, {paint:{"raster-opacity":.95, "raster-fade-duration":0}});
+  if(!map.getSource("ev-storms")){
+    map.addSource("ev-storms", {type:"geojson", data:{type:"FeatureCollection", features:[]}});
+    map.addLayer({id:"ev-storms-glow", type:"circle", source:"ev-storms", layout:{visibility:"none"}, paint:{"circle-radius":["interpolate",["linear"],["zoom"],0,10,5,26],"circle-color":"#ffe14d","circle-opacity":.28,"circle-blur":.8}});
+    map.addLayer({id:"ev-storms", type:"symbol", source:"ev-storms", layout:{visibility:"none","text-field":"гроза","text-font":["Noto Sans Bold"],"text-size":11,"text-allow-overlap":false}, paint:{"text-color":"#ffe14d","text-halo-color":"rgba(5,7,13,.9)","text-halo-width":1.4}});
+  }
+}
+async function lightningApply(){
+  const v = !!on.lightning;
+  if(v && !map.getLayer("ev-lightning")) addLightning();
+  for(const id of ["ev-lightning","ev-storms-glow","ev-storms"]) vis(id, v);
+  if(!v) return;
+  /* how fresh are the satellite flashes? */
+  try{
+    const r = await fetch("https://view.eumetsat.int/geoserver/mtg_fd/li_afa/ows?service=WMS&version=1.3.0&request=GetCapabilities");
+    const tx = await r.text(), m = tx.match(/default="([^"]+)"/);
+    if(m){ const age = (Date.now() - Date.parse(m[1]))/60000, hm = new Date(m[1]).toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"});
+      $("#liStamp").textContent = age > 45 ? `Спутник задерживает данные о молниях: последние в ${hm}` : `Молнии: данные на ${hm}`; $("#liStamp").hidden = false; }
+  }catch(e){}
+  try{
+    const g = await loadGlobe(), f = [];
+    g.C.forEach((c, k) => { if(c >= 95) f.push({type:"Feature", geometry:{type:"Point", coordinates:[-180 + (k % GLON)*GSTEP, -72 + Math.floor(k/GLON)*GSTEP]}, properties:{}}); });
+    (await recordsData().catch(() => [])).forEach(p => { if(p.code >= 95) f.push({type:"Feature", geometry:{type:"Point", coordinates:[p.lon, p.lat]}, properties:{}}); });
+    map.getSource("ev-storms")?.setData({type:"FeatureCollection", features:f});
+  }catch(e){}
+}
+setInterval(() => { if(on.lightning){ liBust = String(Math.floor(Date.now()/300000)); addLightning(); lightningApply(); } }, 5*60*1000);
+
+/* =====================================================================
+   World records right now
+   ===================================================================== */
+const EXTREMES = [["Оймякон",63.46,142.79],["Верхоянск",67.55,133.39],["Станция Восток",-78.46,106.84],["Мак-Мердо",-77.85,166.67],["Южный полюс",-89.99,0],["Долина Смерти",36.46,-116.87],["Даллол",14.24,40.3],["Эль-Кувейт",29.37,47.98],["Ахваз",31.32,48.67],["Басра",30.51,47.78],["Тимбукту",16.77,-3.0],["Алис-Спрингс",-23.7,133.88],["Финикс",33.45,-112.07],["Лас-Вегас",36.17,-115.14],["Уткиагвик",71.29,-156.79],["Резольют",74.7,-94.83],["Эврика",79.99,-85.93],["Диксон",73.51,80.53],["Лонгйир",78.22,15.65],["Ушуая",-54.8,-68.3],["Пунта-Аренас",-53.16,-70.92],["Веллингтон",-41.29,174.78],["Мавсинрам",25.3,91.58],["Кибдо",5.69,-76.66],["Ла-Пас",-16.5,-68.15],["Лхаса",29.65,91.1],["Маунт-Вашингтон",44.27,-71.3],["Мекка",21.39,39.86],["Джибути",11.59,43.15],["Ниамей",13.51,2.11],["Тромсё",69.65,18.96]];
+let recCache = null;
+async function recordsData(){
+  if(recCache && Date.now() - recCache.at < 3600e3) return recCache.v;
+  const P = CITIES.concat(EXTREMES);
+  const d = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${P.map(p=>p[1]).join(",")}&longitude=${P.map(p=>p[2]).join(",")}&current=temperature_2m,weather_code,precipitation,wind_gusts_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max&forecast_days=1&timezone=auto&wind_speed_unit=ms`, 30000, 2);
+  const v = (Array.isArray(d) ? d : [d]).map((r, i) => ({name:P[i][0], lat:P[i][1], lon:P[i][2], t:r.current.temperature_2m, code:r.current.weather_code, pr:r.current.precipitation || 0, gust:r.current.wind_gusts_10m || 0,
+    hi:r.daily.temperature_2m_max[0], lo:r.daily.temperature_2m_min[0], prSum:r.daily.precipitation_sum[0] || 0, gustMax:r.daily.wind_gusts_10m_max[0] || 0}));
+  recCache = {at:Date.now(), v}; return v;
+}
+async function showRecords(){
+  const box = $("#records"); box.hidden = false; $("#layers").hidden = true; $("#layersBtn").setAttribute("aria-expanded","false");
+  box.innerHTML = `<h3><span>Рекорды мира сейчас</span><button class="mini" id="recClose" aria-label="Закрыть рекорды"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h3><div class="loading">Собираю данные со всей планеты…</div>`;
+  $("#recClose").onclick = () => box.hidden = true;
+  let v;
+  try{ v = await recordsData(); }catch(e){ box.querySelector(".loading").textContent = "Не удалось загрузить данные. Попробуйте чуть позже."; return; }
+  if(box.hidden) return;
+  const top = (k, dir) => v.filter(p => p[k] != null).sort((a, b) => dir*(b[k] - a[k]));
+  const hot = top("t", 1), cold = top("t", -1), gust = top("gust", 1), wet = top("pr", 1), range = v.map(p => Object.assign({}, p, {rng: p.hi - p.lo})).sort((a, b) => b.rng - a.rng);
+  const storms = v.filter(p => p.code >= 95);
+  const row = (icon_, title, p, val, note, kind) => `<button class="rec" data-lat="${p.lat}" data-lon="${p.lon}" data-name="${esc(p.name)}" style="--k:var(--k-${kind})">
+      <span class="ri">${icon_}</span><span class="rt"><small>${title}</small><b>${esc(p.name)}</b><em>${note}</em></span><span class="rv">${val}</span></button>`;
+  const ext = (a, b) => `${a.slice(1,3).map(p => esc(p.name)).join(", ")}`;
+  box.innerHTML = `<h3><span>Рекорды мира сейчас</span><button class="mini" id="recClose" aria-label="Закрыть рекорды"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h3>
+    ${row("🔥", "Жарче всего", hot[0], `<span ${tcs(hot[0].t)}>${Tu(hot[0].t)}</span>`, `днём до ${Tu(hot[0].hi)}; дальше: ${ext(hot)}`, "uv")}
+    ${row("🧊", "Холоднее всего", cold[0], `<span ${tcs(cold[0].t)}>${Tu(cold[0].t)}</span>`, `ночью до ${Tu(cold[0].lo)}; дальше: ${ext(cold)}`, "snow")}
+    ${row("💨", "Сильнейший ветер", gust[0], `${Math.round(gust[0].gust)} м/с`, `порывы; за день до ${Math.round(gust[0].gustMax)} м/с`, "wind")}
+    ${wet[0].pr > 0 ? row("🌧", "Сильнее всего льёт", wet[0], `${wet[0].pr.toFixed(1)} мм`, `за час; за сутки ${wet[0].prSum.toFixed(0)} мм`, "rain") : ""}
+    ${row("🎢", "Самый большой перепад", range[0], `${Math.round(range[0].rng)}°`, `от ${Tu(range[0].lo)} до ${Tu(range[0].hi)} за сутки`, "press")}
+    <div class="snote"><b>Разница между самым жарким и самым холодным местом — ${Math.round(hot[0].t - cold[0].t)}°.</b></div>
+    ${storms.length ? `<div class="snote">⚡ Гроза сейчас: ${storms.slice(0,8).map(p => esc(p.name)).join(", ")}${storms.length > 8 ? " и др." : ""}</div>` : ""}
+    <div class="snote">Среди ${v.length} городов и полярных станций. Настоящий рекорд может быть в безлюдном месте без метеостанции.</div>`;
+  $("#recClose").onclick = () => box.hidden = true;
+  box.querySelectorAll(".rec").forEach(b => b.onclick = () => { box.hidden = true; openPlace(+b.dataset.lat, +b.dataset.lon, {name:b.dataset.name, zoom:5}); });
+}
+$("#recBtn").onclick = e => { e.stopPropagation(); showRecords(); };
+document.addEventListener("click", e => { const b = $("#records"); if(!b.hidden && e.target.isConnected && !e.target.closest("#records,#recBtn")) b.hidden = true; });
+
+/* =====================================================================
+   Seasonal decoration in space around the globe
+   ===================================================================== */
+function seasonNow(){
+  const d = new Date(), m = d.getMonth(), day = d.getDate(), south = ((favs[0]?.lat ?? 50) < 0);
+  if((m === 11 && day >= 20) || (m === 0 && day <= 10)) return south ? "summer" : "newyear";
+  const n = m <= 1 || m === 11 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "autumn";
+  return south ? {winter:"summer", spring:"autumn", summer:"winter", autumn:"spring"}[n] : n;
+}
+const SEASON_NAME = {winter:"зима", newyear:"Новый год", spring:"весна", summer:"лето", autumn:"осень"};
+const sea = {cv:$("#season"), parts:[], raf:0, kind:"", last:0};
+function seaSpawn(top){
+  const W = innerWidth, H = innerHeight, k = sea.kind, x = Math.random()*W, y = top ? -20 : Math.random()*H;
+  if(k === "summer") return {x, y: Math.random()*H, vx:(Math.random()-.5)*12, vy:(Math.random()-.5)*12, ph:Math.random()*6.3, r:1.2 + Math.random()*1.6};
+  if(k === "autumn") return {x, y, vy:22 + Math.random()*26, sw:.6 + Math.random(), ph:Math.random()*6.3, rot:Math.random()*6.3, vr:(Math.random()-.5)*2, s:5 + Math.random()*5, c:["#e8892f","#d4552f","#e6b43c","#b5442a"][Math.floor(Math.random()*4)]};
+  if(k === "spring") return {x, y, vy:16 + Math.random()*18, sw:.5 + Math.random(), ph:Math.random()*6.3, rot:Math.random()*6.3, vr:(Math.random()-.5)*2.4, s:3 + Math.random()*3, c:["#ffc2d6","#ffd9e6","#fff0f5"][Math.floor(Math.random()*3)]};
+  return {x, y, vy:14 + Math.random()*26, sw:.5 + Math.random(), ph:Math.random()*6.3, r:.8 + Math.random()*1.8, c: k === "newyear" && Math.random() < .25 ? ["#ff6a6a","#ffd35c","#6fe3c8","#7cc4ff"][Math.floor(Math.random()*4)] : "#fff"};
+}
+function seaFrame(t){
+  sea.raf = requestAnimationFrame(seaFrame);
+  const dt = Math.min(.05, (t - (sea.last || t))/1000); sea.last = t;
+  const ctx = sea.cv.getContext("2d"), W = innerWidth, H = innerHeight, k = sea.kind, tt = t/1000;
+  ctx.clearRect(0, 0, W, H);
+  const n = Math.round(W*H/(k === "summer" ? 26000 : 14000));
+  while(sea.parts.length < n) sea.parts.push(seaSpawn(false));
+  for(const p of sea.parts){
+    if(k === "summer"){
+      p.vx += (Math.random()-.5)*20*dt; p.vy += (Math.random()-.5)*20*dt; p.vx *= .98; p.vy *= .98; p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x < -10 || p.x > W+10 || p.y < -10 || p.y > H+10) Object.assign(p, seaSpawn(false));
+      const a = .35 + .65*Math.max(0, Math.sin(tt*1.6 + p.ph));
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*5); g.addColorStop(0, `rgba(255,240,150,${a})`); g.addColorStop(1, "rgba(255,220,100,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r*5, 0, 7); ctx.fill(); continue;
+    }
+    p.y += p.vy*dt; p.x += Math.sin(tt*p.sw + p.ph)*18*dt;
+    if(p.y > H + 20) Object.assign(p, seaSpawn(true));
+    if(k === "autumn" || k === "spring"){
+      p.rot += p.vr*dt; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.globalAlpha = .85;
+      ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s*(k === "autumn" ? .55 : .7), 0, 0, 7); ctx.fill();
+      if(k === "autumn"){ ctx.strokeStyle = "rgba(90,40,10,.6)"; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(-p.s, 0); ctx.lineTo(p.s, 0); ctx.stroke(); }
+      ctx.restore(); continue;
+    }
+    ctx.globalAlpha = p.c === "#fff" ? .8 : .95; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    if(p.c !== "#fff"){ ctx.globalAlpha = .25; ctx.beginPath(); ctx.arc(p.x, p.y, p.r*3, 0, 7); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+}
+function seasonApply(){
+  cancelAnimationFrame(sea.raf); sea.raf = 0;
+  const onIt = settings.season !== false && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  sea.cv.hidden = !onIt;
+  if(!onIt) return;
+  sea.kind = seasonNow(); sea.parts = [];
+  const d = Math.min(2, devicePixelRatio||1); sea.cv.width = innerWidth*d; sea.cv.height = innerHeight*d; sea.cv.getContext("2d").setTransform(d,0,0,d,0,0);
+  sea.last = 0; sea.raf = requestAnimationFrame(seaFrame);
+}
+addEventListener("resize", () => { if(sea.raf) seasonApply(); });
+document.addEventListener("visibilitychange", () => { if(document.hidden){ cancelAnimationFrame(sea.raf); sea.raf = 0; } else seasonApply(); });
+
+/* =====================================================================
+   Intro: fly in from space to your city
+   ===================================================================== */
+function playIntro(target, done){
+  const sp = $("#splash");
+  if(settings.intro === false || matchMedia("(prefers-reduced-motion: reduce)").matches){ sp.remove(); done(); return; }
+  let finished = false;
+  const finish = () => { if(finished) return; finished = true; sp.classList.add("out"); setTimeout(() => sp.remove(), 700); done(); };
+  map.jumpTo({center:[target[0] - 110, target[1]*0.3], zoom:0, bearing:-25, pitch:0});
+  sp.onclick = () => { map.stop(); map.jumpTo({center:target, zoom:innerWidth<760 ? 0.9 : 1.6, bearing:0}); finish(); };
+  setTimeout(() => {
+    if(finished) return;
+    map.flyTo({center:target, zoom:innerWidth<760 ? 1.3 : 2, bearing:0, duration:3400, curve:1.15, essential:true});
+    map.once("moveend", finish);
+    setTimeout(() => sp.classList.add("fade"), 1600);
+    setTimeout(finish, 4200);
+  }, 350);
+}
+
 map.on("load", () => {
   buildMapLayers(); renderLayerUI(); renderFavs(); syncApp();
   if(!favs.length) setTimeout(() => peekUpdate(true), 1200);
+  seasonApply();
   const qp = new URLSearchParams(location.search), qlat = parseFloat(qp.get("lat")), qlon = parseFloat(qp.get("lon"));
-  if(isFinite(qlat) && isFinite(qlon) && Math.abs(qlat)<=90){
+  const deep = isFinite(qlat) && isFinite(qlon) && Math.abs(qlat)<=90;
+  const target = deep ? [qlon, qlat] : favs.length ? [favs[0].lon, favs[0].lat] : store.get("center", [30, 25]);
+  playIntro(target, () => {
+  if(deep){
     history.replaceState(null, "", location.pathname);
     setTimeout(() => openPlace(qlat, qlon, {name: qp.get("n") || undefined, sub: qp.get("s") || "", zoom:6}), 500);
   }
   else if(favs.length){ const f = favs[0]; setTimeout(() => openPlace(f.lat, f.lon, {name:f.name, sub:f.sub, zoom:6}), 500); }
   else if(spinning) setTimeout(spinStep, 800);
+  });
   setTimeout(()=>{ $("#hint").style.opacity=0; }, 9000);
 });
 if("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});

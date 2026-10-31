@@ -99,7 +99,9 @@ button{cursor:pointer}
 .layer[aria-pressed="true"] .chk::after{content:"";width:8px;height:5px;border:2px solid #0d1830;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .sep{height:1px;background:var(--line);margin:8px 4px}
 .stamp{font:12px var(--mono);color:var(--muted);padding:2px 8px 4px}
-.timeline{display:flex;align-items:center;gap:10px;border-radius:14px;padding:8px 12px;width:min(340px,calc(100vw - 24px))}
+.timeline{display:flex;align-items:center;gap:10px;border-radius:14px;padding:6px 10px;width:min(340px,calc(100vw - 92px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
+.timeline .play{width:32px;height:32px}
+.timeline span{min-width:0;white-space:nowrap;font-size:12px}
 .timeline input{flex:1;accent-color:var(--rain);min-width:0}
 .timeline span{font:600 13px var(--mono);min-width:56px;text-align:right}
 .play{width:36px;height:36px;border-radius:50%;border:0;background:var(--rain);color:#0d1830;display:grid;place-items:center;flex:none;padding:0}
@@ -875,7 +877,8 @@ async function startRadar(){
   catch(e){ toast("Не удалось загрузить радар. Проверьте интернет и включите слой ещё раз."); on.radar=false; $("#timeline").hidden=true; renderLayerUI(); }
 }
 function showFrame(i){
-  radar.frames.forEach((f,j)=>{ const id="radar-"+j; if(!map.getLayer(id)) return; map.setLayoutProperty(id,"visibility","visible"); map.setPaintProperty(id,"raster-opacity", j===i ? .8 : 0); });
+  const nx = (i + 1) % radar.frames.length;
+  radar.frames.forEach((f,j)=>{ const id="radar-"+j; if(!map.getLayer(id)) return; const show = j===i || (radar.timer && j===nx); map.setLayoutProperty(id,"visibility", show ? "visible" : "none"); map.setPaintProperty(id,"raster-opacity", j===i ? .8 : 0); });
   radar.idx=i; $("#frame").value=i;
   const fr = radar.frames[i]; if(!fr) return;
   $("#frameTime").textContent = new Date(fr.time*1000).toLocaleTimeString("ru",{hour:"2-digit",minute:"2-digit"});
@@ -885,8 +888,10 @@ function stopRadar(){ $("#timeline").hidden = true; pauseRadar(); if(!wx.active 
 function pauseRadar(){ clearInterval(radar.timer); radar.timer=null; $("#play").innerHTML=PLAY_ICON; $("#play").setAttribute("aria-label","Воспроизвести анимацию радара"); }
 $("#play").onclick = () => {
   if(radar.timer){ pauseRadar(); return; }
+  if(ctl.timer) cloudPause();
   $("#play").innerHTML=PAUSE_ICON; $("#play").setAttribute("aria-label","Пауза");
-  radar.timer = setInterval(()=> showFrame((radar.idx+1)%radar.frames.length), 600);
+  radar.timer = setInterval(()=>{ const n=(radar.idx+1)%radar.frames.length; if(map.getSource("radar-"+n) && !map.isSourceLoaded("radar-"+n)) return; showFrame(n); }, 700);
+  showFrame(radar.idx);
 };
 $("#frame").oninput = e => { pauseRadar(); showFrame(+e.target.value); };
 
@@ -2258,6 +2263,7 @@ Object.assign(BASES, {
   bluemarble: {name:"Голубой мрамор", sub:"Земля из космоса, NASA", sw:"linear-gradient(135deg,#2f5f8f,#5f8f4f 50%,#e8e0c8)", tiles:[gibs("BlueMarble_ShadedRelief_Bathymetry","GoogleMapsCompatible_Level8","jpeg")], max:8, attr:"NASA Blue Marble"},
   lights:     {name:"Ночные огни", sub:"Огни городов из космоса, NASA", sw:"linear-gradient(135deg,#050a1c,#1a2340 60%,#ffcf6a)", tiles:[gibs("VIIRS_Black_Marble","GoogleMapsCompatible_Level8","png")], max:8, attr:"NASA Black Marble"}
 });
+{ const sb = store.get("base","sat"); if(BASES[sb]) base = sb; } /* remember extra map types across restarts */
 Object.assign(OVERLAYS, {
   daynight: {name:"День и ночь", sub:"Тень ночи на Земле прямо сейчас", sw:"linear-gradient(90deg,#ffe3a0 0 50%,#0b1636 50%)", def:true},
   terrain:  {name:"Горы в 3D", sub:"Объёмный рельеф; наклоните карту двумя пальцами", sw:"linear-gradient(160deg,#f2f2f2,#8a9a6b 45%,#3f5a3a)", def:false},
@@ -2967,28 +2973,30 @@ function cloudTile(z, x, y, t){
     const sd = sx.getImageData(0, 0, W, W).data, A = new Float32Array(W*W);
     for(let i = 0, p = 0; i < sd.length; i += 4, p++){ let a = (sd[i] - 92)/(205 - 92); a = a <= 0 ? 0 : a >= 1 ? 1 : Math.pow(a, .8); A[p] = a * sd[i+3]/255; }
     const out = mk(256, 256), ox = out.getContext("2d"), img = ox.createImageData(256, 256), d = img.data;
-    const sh = mk(256, 256), hx = sh.getContext("2d"), simg = hx.createImageData(256, 256), s = simg.data;
     const at = (px, py) => A[py*W + px];
     for(let y = 0; y < 256; y++) for(let x = 0; x < 256; x++){
       const X = x + CM, Y = y + CM, a = at(X, Y), o = (y*256 + x)*4;
       /* light from the upper left: brighter tops, darker undersides -> clouds look puffy */
       const relief = (at(X-2, Y-2) - at(X+2, Y+2));
       const shade = Math.max(150, Math.min(255, 226 + 29*a - 70*relief));
-      d[o] = shade - 8*(1-a); d[o+1] = shade - 4*(1-a); d[o+2] = Math.min(255, shade + 2); d[o+3] = 240*a;
-      /* shadow cast down-right on the ground, softly blurred */
-      let sa = 0; for(let dy = -1; dy <= 1; dy++) for(let dx = -1; dx <= 1; dx++) sa += at(X - 6 + dx, Y - 7 + dy);
-      sa = sa/9;
-      s[o] = 6; s[o+1] = 12; s[o+2] = 30; s[o+3] = 120*sa*(1 - a*.6);
+      /* shadow cast down-right on the ground, under the cloud itself */
+      const sa = (at(X-6, Y-7) + at(X-7, Y-6) + at(X-5, Y-8) + at(X-6, Y-6))/4, shA = .47*sa*(1 - a);
+      const cA = .94*a, outA = cA + shA*(1 - cA);
+      if(outA <= 0.003){ d[o+3] = 0; continue; }
+      d[o]   = (shade - 8*(1-a))*cA/outA + 6*shA*(1-cA)/outA;
+      d[o+1] = (shade - 4*(1-a))*cA/outA + 12*shA*(1-cA)/outA;
+      d[o+2] = Math.min(255, shade + 2)*cA/outA + 30*shA*(1-cA)/outA;
+      d[o+3] = 255*outA;
     }
-    ox.putImageData(img, 0, 0); hx.putImageData(simg, 0, 0);
+    ox.putImageData(img, 0, 0);
     const blob = c => c.convertToBlob ? c.convertToBlob({type:"image/png"}) : new Promise(res => c.toBlob(res, "image/png"));
-    return {cloud: await (await blob(out)).arrayBuffer(), shadow: await (await blob(sh)).arrayBuffer()};
+    return {cloud: await (await blob(out)).arrayBuffer()};
   })();
   cloudCache.set(key, pr); pr.catch(() => cloudCache.delete(key));
   if(cloudCache.size > 400) cloudCache.delete(cloudCache.keys().next().value);
   return pr;
 }
-for(const [proto, part] of [["eumclouds","cloud"],["eumshadow","shadow"]])
+for(const [proto, part] of [["eumclouds","cloud"]])
   maplibregl.addProtocol(proto, async params => {
     const m = params.url.match(/:\/\/(\d+)\/(\d+)\/(\d+)(?:\?t=([^&]*))?/);
     const r = await cloudTile(+m[1], +m[2], +m[3], m[4] ? decodeURIComponent(m[4]) : "");
@@ -3004,20 +3012,23 @@ function cloudFrames(){
 function addCloudFrame(i){
   if(ctl.added.has(i)) return;
   const t = encodeURIComponent(ctl.frames[i]);
-  addRaster(`shd-${i}`, {type:"raster", tiles:[`eumshadow://{z}/{x}/{y}?t=${t}`], tileSize:256, maxzoom:6}, {paint:{"raster-opacity":0, "raster-opacity-transition":{duration:0}, "raster-fade-duration":0}});
   addRaster(`cld-${i}`, {type:"raster", tiles:[`eumclouds://{z}/{x}/{y}?t=${t}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":0, "raster-opacity-transition":{duration:0}, "raster-fade-duration":0}});
   ctl.added.add(i);
 }
 function resetCloudFrames(){
-  for(const i of ctl.added){ for(const id of [`shd-${i}`, `cld-${i}`]){ if(map.getLayer(id)) map.removeLayer(id); if(map.getSource(id)) map.removeSource(id); } }
+  for(const i of ctl.added){ for(const id of [`cld-${i}`]){ if(map.getLayer(id)) map.removeLayer(id); if(map.getSource(id)) map.removeSource(id); } }
   ctl.added.clear(); ctl.frames = cloudFrames(); ctl.idx = ctl.frames.length - 1;
   $("#cframe").max = ctl.frames.length - 1;
 }
 function showCloudFrame(i){
   ctl.idx = i; $("#cframe").value = i;
-  for(const k of ctl.added){
-    const v = on.clouds ? "visible" : "none";
-    for(const id of [`shd-${k}`, `cld-${k}`]) if(map.getLayer(id)){ map.setLayoutProperty(id, "visibility", v); map.setPaintProperty(id, "raster-opacity", k === i ? 1 : 0); }
+  const n = ctl.frames.length, next = (i + 1) % n;
+  if(ctl.timer) addCloudFrame(next);
+  for(const k of [...ctl.added]){
+    const id = `cld-${k}`; if(!map.getLayer(id)) continue;
+    const keep = k === i || (ctl.timer && k === next);
+    if(!keep){ map.removeLayer(id); map.removeSource(id); ctl.added.delete(k); continue; }
+    map.setLayoutProperty(id, "visibility", on.clouds ? "visible" : "none"); map.setPaintProperty(id, "raster-opacity", k === i ? 1 : 0);
   }
   const dt = new Date(ctl.frames[i]), loc = current?.wx ? new Date(dt.getTime() + current.wx.utc_offset_seconds*1000) : null;
   const hm = d => d.toISOString().slice(11,16), today = new Date().toISOString().slice(0,10);
@@ -3028,23 +3039,23 @@ function showCloudFrame(i){
 function cloudsApply(){
   if(!ctl.frames.length) resetCloudFrames();
   if(on.clouds){ addCloudFrame(ctl.idx); showCloudFrame(ctl.idx); }
-  else { for(const k of ctl.added) for(const id of [`shd-${k}`, `cld-${k}`]) vis(id, false); cloudPause(); }
+  else { for(const k of ctl.added) for(const id of [`cld-${k}`]) vis(id, false); cloudPause(); }
   vis("ir-world", on.ir && !on.clouds);
   $("#cloudTL").hidden = !on.clouds || wx.active;
 }
-function cloudPause(){ clearInterval(ctl.timer); ctl.timer = null; $("#cplay").innerHTML = PLAY_ICON; $("#cplay").setAttribute("aria-label", "Показать облака за сутки"); }
+function cloudPause(){ const was = !!ctl.timer; clearInterval(ctl.timer); ctl.timer = null; if(was && ctl.frames.length) showCloudFrame(ctl.idx); $("#cplay").innerHTML = PLAY_ICON; $("#cplay").setAttribute("aria-label", "Показать облака за сутки"); }
 $("#cplay").innerHTML = PLAY_ICON;
 $("#cplay").onclick = () => {
   if(ctl.timer){ cloudPause(); return; }
-  for(let i = 0; i < ctl.frames.length; i++) addCloudFrame(i);
-  showCloudFrame(ctl.idx);
+  if(radar.timer) pauseRadar();
   $("#cplay").innerHTML = PAUSE_ICON; $("#cplay").setAttribute("aria-label", "Пауза");
   let first = true;
   ctl.timer = setInterval(() => {
     const n = ctl.frames.length, next = ctl.idx >= n - 1 ? 0 : ctl.idx + 1;
+    if(!map.getSource(`cld-${next}`) || !map.isSourceLoaded(`cld-${next}`)) return; /* wait until the next frame is ready */
     showCloudFrame(next);
-    if(first && next === n - 1){ first = false; }
-  }, 900);
+  }, 1200);
+  showCloudFrame(ctl.idx);
 };
 $("#cframe").oninput = e => { cloudPause(); const i = +e.target.value; addCloudFrame(i); showCloudFrame(i); };
 function addSatellite(){

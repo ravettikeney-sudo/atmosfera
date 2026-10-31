@@ -99,6 +99,11 @@ button{cursor:pointer}
 .layer[aria-pressed="true"] .chk::after{content:"";width:8px;height:5px;border:2px solid #0d1830;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .sep{height:1px;background:var(--line);margin:8px 4px}
 .stamp{font:12px var(--mono);color:var(--muted);padding:2px 8px 4px}
+#cloudTL,#timeline{display:none!important}
+.fcbar{display:flex;align-items:center;gap:10px;border-radius:14px;padding:6px 14px 6px 6px;text-align:left;max-width:calc(100vw - 92px)}
+.fcbar .play{display:grid;place-items:center;flex:none}
+.fcbar b{display:block;font-size:14px}
+.fcbar small{display:block;color:var(--muted);font-size:12px}
 .timeline{display:flex;align-items:center;gap:10px;border-radius:14px;padding:6px 10px;width:min(340px,calc(100vw - 92px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
 .timeline .play{width:32px;height:32px}
 .timeline span{min-width:0;white-space:nowrap;font-size:12px}
@@ -563,6 +568,10 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 </div>
 
 <div class="dock">
+  <button class="fcbar glass" id="fcBar" hidden aria-label="Дождь и облака на 5 часов вперёд">
+    <span class="play" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></span>
+    <span class="fct"><b>Прогноз на карте</b><small>дождь и облака: сейчас → +5 ч</small></span>
+  </button>
   <div class="timeline glass" id="cloudTL" hidden>
     <button class="play" id="cplay" aria-label="Показать облака за сутки"></button>
     <input type="range" id="cframe" min="0" max="8" value="8" aria-label="Время снимка облаков">
@@ -660,7 +669,7 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
   </div>
   <div class="wx-time">
     <button class="play" id="wxPlay" aria-label="Воспроизвести прогноз"></button>
-    <input type="range" id="wxRange" min="0" max="12" step="0.25" value="0" aria-label="Время прогноза">
+    <input type="range" id="wxRange" min="0" max="5" step="0.25" value="0" aria-label="Время прогноза">
     <span class="wx-clock" id="wxClock">сейчас</span>
   </div>
   <div class="wx-ticks" id="wxTicks"></div>
@@ -834,7 +843,7 @@ function applyOverlays(){
   $("#tempLegend").hidden = !on.temps;
   $("#satStamp").hidden = !(on.clouds||on.ir);
   applyExtraLayers();
-  store.set("base",base); store.set("overlays",Object.assign({}, on, {terrain:false}));
+  store.set("base",base); store.set("overlays",Object.assign({}, on, {terrain:false})); fcUpdate();
 }
 
 /* layer panel UI */
@@ -1538,7 +1547,7 @@ function hourlySVG(h, start, n, mode="temp"){
 }
 
 /* ================= «Погода на карте»: animated precipitation & cloud forecast ================= */
-const N = 13, HOURS = 12, CW = 256, EDGE = 40;
+const N = 13, HOURS = 5, CW = 256, EDGE = 40;
 const wx = Object.assign({active:false, data:null, t:0, timer:null, canvas:null, ctx:null, img:null, center:null, extent:null, clouds:true, precip:true, wind:false, press:false, temp:false, radar:false, loading:false, offset:0}, store.get("wxLayers", {}));
 /* tileable value noise for cloud/rain texture */
 const NOISE = (()=>{
@@ -1657,7 +1666,7 @@ function updateWxClock(){
   $("#wxRange").setAttribute("aria-valuetext", wx.t < 0.13 ? "сейчас" : `${hh}:${mm}`);
 }
 function wxTicks(D){
-  const out=[]; for(let k=0;k<=HOURS;k+=3){ const dt=new Date(Date.now()+k*3600000+D.tz*1000); out.push(k===0?"сейчас":String(dt.getUTCHours()).padStart(2,"0")+":00"); }
+  const out=[]; for(let k=0;k<=HOURS;k+=1){ const dt=new Date(Date.now()+k*3600000+D.tz*1000); out.push(k===0?"сейчас":String(dt.getUTCHours()).padStart(2,"0")+":00"); }
   $("#wxTicks").innerHTML = out.map(s=>`<span>${s}</span>`).join("");
 }
 function setWxCanvas(ext){
@@ -1668,17 +1677,19 @@ function setWxCanvas(ext){
   wx.coords = coords;
   map.addLayer({id:"wxcanvas",type:"raster",source:"wxcanvas",paint:{"raster-opacity":.95,"raster-fade-duration":0,"raster-resampling":"linear"}}, map.getLayer(LABELS_FIRST)?LABELS_FIRST:undefined);
 }
-async function openWx(){
+function fcUpdate(){ const b = document.getElementById("fcBar"); if(b) b.hidden = !(on.clouds || on.radar || on.precip) || (typeof wx !== "undefined" && wx.active); }
+document.getElementById("fcBar").onclick = () => { const c = map.getCenter(); openWx(current ? null : {lat:c.lat, lon:((c.lng+540)%360)-180}); };
+async function openWx(at){
   if(wx.loading) return;
-  const lat = current ? current.lat : map.getCenter().lat, lon = current ? current.lon : map.getCenter().lng;
-  wx.active = true; wx.center = {lat, lon}; globeWindApply(); $("#cloudTL").hidden = true; $("#peek").hidden = true; $("#reticle").hidden = true;
+  const lat = at ? at.lat : current ? current.lat : map.getCenter().lat, lon = at ? at.lon : current ? current.lon : map.getCenter().lng;
+  wx.active = true; wx.center = {lat, lon}; fcUpdate(); for(const k of ctl.added) vis(`cld-${k}`, false); vis("ir-world", false); if(!wx.radar) hideRadarLayers(); globeWindApply(); $("#cloudTL").hidden = true; $("#peek").hidden = true; $("#reticle").hidden = true;
   document.body.classList.add("wxmode"); $("#wxBtn").setAttribute("aria-pressed","true");
   $("#sheet").hidden = true; document.body.classList.remove("sheet-open","sheet-min");
   $("#layers").hidden = true; $("#hint").style.opacity = 0;
   $("#wxpanel").hidden = false; $("#wxRefresh").hidden = true;
   document.documentElement.style.setProperty("--wxh", $("#wxpanel").offsetHeight+"px");
   $("#wxPlace").textContent = current ? `${current.name}: погода на карте` : "Погода на карте";
-  $("#wxText").textContent = current?.wx ? (nowcast(current.wx).text || "Осадки и облака на 12 часов вперёд") : "Осадки и облака на 12 часов вперёд";
+  $("#wxText").textContent = current?.wx ? (nowcast(current.wx).text || "Осадки и облака на 5 часов вперёд") : "Осадки и облака на 5 часов вперёд";
   stopSpin();
   if(!current) setPin(lat, lon);
   map.flyTo({center:[lon,lat], zoom: innerWidth<760 ? 5.6 : 6, pitch:0, bearing:0, duration:1400, essential:true, padding: innerWidth<760 ? {bottom:$("#wxpanel").offsetHeight, top:70, left:0, right:0} : {bottom:$("#wxpanel").offsetHeight+30, top:0,left:0,right:0}});
@@ -1697,10 +1708,10 @@ async function loadWxFor(lat, lon){
     drawWx();
     setWxCanvas(D.ext);
     fxStart();
-    $("#wxText").textContent = prevText==="Загружаю карту осадков…" ? "Осадки и облака на 12 часов вперёд" : prevText;
+    $("#wxText").textContent = prevText==="Загружаю карту осадков…" ? "Осадки и облака на 5 часов вперёд" : prevText;
     if(current?.wx && Math.abs(current.lat-lat)<0.5 && Math.abs(current.lon-lon)<0.5){
       const nc = nowcast(current.wx).text, area = areaNearby(D);
-      $("#wxText").textContent = [nc, /без осадков/i.test(nc) ? area : ""].filter(Boolean).join(". ") || "Осадки и облака на 12 часов вперёд";
+      $("#wxText").textContent = [nc, /без осадков/i.test(nc) ? area : ""].filter(Boolean).join(". ") || "Осадки и облака на 5 часов вперёд";
     } else $("#wxText").textContent = summarizeArea(D);
     if(wx.radar) showWxRadar(true);
     wxPlay(true);
@@ -1719,17 +1730,18 @@ function summarizeArea(D){
   let wet=0, any=false, snow=false;
   for(let t=0;t<hrs;t++){ for(let k=0;k<sz;k++) if(D.P[t*sz+k]>=0.1){ any=true; if(D.Sn[t*sz+k]>0) snow=true; } }
   for(let t=0;t<hrs;t++) if(D.P[t*sz+ci]>=0.1) wet++;
-  if(!any) return "В этой области ближайшие 12 часов без осадков";
-  return wet ? `В центре карты осадки около ${wet} ч из ближайших 12` : `Рядом ${snow?"идёт снег":"идут дожди"}, в центре карты сухо`;
+  if(!any) return "В этой области ближайшие 5 часов без осадков";
+  return wet ? `В центре карты осадки около ${wet} ч из ближайших 5` : `Рядом ${snow?"идёт снег":"идут дожди"}, в центре карты сухо`;
 }
 function wxPlay(force){
   if(wx.timer && !force){ clearInterval(wx.timer); wx.timer=null; $("#wxPlay").innerHTML=PLAY_ICON; $("#wxPlay").setAttribute("aria-label","Воспроизвести прогноз"); return; }
   clearInterval(wx.timer);
   if(matchMedia("(prefers-reduced-motion: reduce)").matches && force) return;
   $("#wxPlay").innerHTML=PAUSE_ICON; $("#wxPlay").setAttribute("aria-label","Пауза");
-  wx.timer = setInterval(()=>{ wx.t += 0.1; if(wx.t > HOURS) wx.t = 0; drawWx(); }, 110);
+  wx.timer = setInterval(()=>{ wx.t += 0.05; if(wx.t > HOURS) wx.t = 0; drawWx(); }, 110);
 }
 function closeWx(keepSheet){
+  setTimeout(() => { fcUpdate(); cloudsApply(); if(on.radar) startRadar(); }, 0);
   wx.active = false; clearInterval(wx.timer); wx.timer=null; fxStop(); globeWindApply(); cloudsApply(); setTimeout(()=>peekUpdate(true), 700);
   $("#wxPlay").innerHTML=PLAY_ICON;
   if(map.getLayer("wxcanvas")) map.removeLayer("wxcanvas");

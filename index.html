@@ -100,6 +100,9 @@ button{cursor:pointer}
 .sep{height:1px;background:var(--line);margin:8px 4px}
 .stamp{font:12px var(--mono);color:var(--muted);padding:2px 8px 4px}
 #cloudTL,#timeline{display:none!important}
+.imgdate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-radius:12px;padding:6px 10px;font-size:12px;color:var(--muted);max-width:calc(100vw - 92px)}
+.imgdate b{color:var(--fg);font-weight:600}
+.imgdate button{border:1px solid var(--ice);background:rgba(124,196,255,.14);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600}
 .fcbar{display:flex;align-items:center;gap:10px;border-radius:14px;padding:6px 14px 6px 6px;text-align:left;max-width:calc(100vw - 92px)}
 .fcbar .play{display:grid;place-items:center;flex:none}
 .fcbar b{display:block;font-size:14px}
@@ -568,6 +571,7 @@ body.sheet-open:not(.sheet-min) .peek{display:none}
 </div>
 
 <div class="dock">
+  <div class="imgdate glass" id="imgDate" hidden></div>
   <button class="fcbar glass" id="fcBar" hidden aria-label="Дождь и облака на 5 часов вперёд">
     <span class="play" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></span>
     <span class="fct"><b>Прогноз на карте</b><small>дождь и облака: сейчас → +5 ч</small></span>
@@ -771,6 +775,7 @@ const LABELS_FIRST = "lbl-border-country"; // every raster is inserted below the
 const BASES = {
   sat:   {name:"Спутник (детально)", sub:"Снимки высокого разрешения, Esri", sw:"linear-gradient(135deg,#1d3a2a,#3c5a34 45%,#1b3150)", tiles:[`${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`], max:19, attr:"Снимки © Esri, Maxar, Earthstar Geographics"},
   today: {name:"Земля сегодня", sub:"Снимок всей планеты за сегодня, NASA VIIRS", sw:"linear-gradient(135deg,#f2f5fa,#5d8ab8 50%,#2f5b3a)", tiles:[gibs("VIIRS_SNPP_CorrectedReflectance_TrueColor","GoogleMapsCompatible_Level9","jpg")], max:9, attr:"NASA GIBS / VIIRS"},
+  s2:    {name:"Спутник 2025 (свежий)", sub:"Снимок Sentinel-2 за 2025 год: новые районы видны, детали до 10 м", sw:"linear-gradient(135deg,#3d5a2a,#7a8f55 45%,#2a4f73)", tiles:["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/{z}/{y}/{x}.jpg"], max:15, attr:"Sentinel-2 cloudless 2025 © EOX IT Services (Copernicus Sentinel data 2025)"},
   dark:  {name:"Ночная карта", sub:"Тёмная карта с границами", sw:"linear-gradient(135deg,#0c111c,#1e2a3d)", tiles:[`${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`], max:16, attr:"© Esri"}
 };
 const OVERLAYS = {
@@ -843,7 +848,7 @@ function applyOverlays(){
   $("#tempLegend").hidden = !on.temps;
   $("#satStamp").hidden = !(on.clouds||on.ir);
   applyExtraLayers();
-  store.set("base",base); store.set("overlays",Object.assign({}, on, {terrain:false})); fcUpdate();
+  store.set("base",base); store.set("overlays",Object.assign({}, on, {terrain:false})); fcUpdate(); if(typeof imgDateUpdate === "function") imgDateUpdate();
 }
 
 /* layer panel UI */
@@ -1679,6 +1684,30 @@ function setWxCanvas(ext){
 }
 function fcUpdate(){ const b = document.getElementById("fcBar"); if(b) b.hidden = !(on.clouds || on.radar || on.precip) || (typeof wx !== "undefined" && wx.active); }
 document.getElementById("fcBar").onclick = () => { const c = map.getCenter(); openWx(current ? null : {lat:c.lat, lon:((c.lng+540)%360)-180}); };
+/* how old is the satellite photo under the screen centre (Esri publishes the capture date) */
+const MON_FULL = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+let imgDateTimer = null, imgDateSeq = 0;
+function imgDateUpdate(){
+  clearTimeout(imgDateTimer);
+  const box = document.getElementById("imgDate");
+  if(!(base === "sat" || base === "s2") || map.getZoom() < 10 || (typeof wx !== "undefined" && wx.active)){ box.hidden = true; return; }
+  if(base === "s2"){ box.hidden = false; box.innerHTML = `<span>Снимок: <b>2025 год</b>, Sentinel-2</span><button id="imgSat">Детальнее (Esri)</button>`; document.getElementById("imgSat").onclick = () => { base = "sat"; applyOverlays(); renderLayerUI(); }; return; }
+  imgDateTimer = setTimeout(async () => {
+    const c = map.getCenter(), b = map.getBounds(), seq = ++imgDateSeq;
+    try{
+      const u = `https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/identify?geometry=${c.lng.toFixed(5)},${c.lat.toFixed(5)}&geometryType=esriGeometryPoint&sr=4326&layers=all&tolerance=1&mapExtent=${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}&imageDisplay=${innerWidth},${innerHeight},96&returnGeometry=false&f=json`;
+      const d = await getJSON(u, 10000, 1); if(seq !== imgDateSeq) return;
+      const r = (d.results||[]).find(x => x.layerName === "World Imagery" && x.attributes?.["DATE (YYYYMMDD)"]);
+      if(!r){ box.hidden = true; return; }
+      const ds = String(r.attributes["DATE (YYYYMMDD)"]), yr = +ds.slice(0,4), mo = +ds.slice(4,6), age = new Date().getFullYear() - yr;
+      const res = r.attributes["RESOLUTION (M)"];
+      box.hidden = false;
+      box.innerHTML = `<span>Снимок здесь: <b>${MON_FULL[mo-1] || ""} ${yr}</b>${res ? ` · ${String(res).replace(".",",")} м` : ""}</span>${age >= 2 ? `<button id="imgS2">Свежий снимок 2025</button>` : ""}`;
+      const btn = document.getElementById("imgS2"); if(btn) btn.onclick = () => { base = "s2"; applyOverlays(); renderLayerUI(); toast("Снимок Sentinel-2 за 2025 год: новые районы видны, но мельче — до 10 м"); };
+    }catch(e){ box.hidden = true; }
+  }, 600);
+}
+map.on("moveend", imgDateUpdate);
 async function openWx(at){
   if(wx.loading) return;
   const lat = at ? at.lat : current ? current.lat : map.getCenter().lat, lon = at ? at.lon : current ? current.lon : map.getCenter().lng;

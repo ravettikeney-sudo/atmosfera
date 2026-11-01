@@ -826,10 +826,32 @@ function addLabels(){
   map.__labelIds = L.map(l=>l.id);
 }
 
+/* fresh street map drawn from OpenStreetMap data (OpenFreeMap planet, rebuilt every week): new districts and houses appear quickly */
+const OSM_IDS = [];
+function addOsmBase(){
+  const before = LABELS_FIRST, L = (def) => { def.source = "omt"; def.layout = Object.assign({visibility:"none"}, def.layout||{}); map.addLayer(def, before); OSM_IDS.push(def.id); };
+  map.addLayer({id:"osm-bg", type:"background", layout:{visibility:"none"}, paint:{"background-color":"#f2efe9"}}, before); OSM_IDS.push("osm-bg");
+  L({id:"osm-landcover", type:"fill", "source-layer":"landcover", paint:{"fill-color":["match",["get","class"],"wood","#cfe5bf","grass","#dcecc9","farmland","#eef0d5","wetland","#d6ebe6","sand","#f3e8c4","ice","#f4f8fb","#e3edd3"],"fill-opacity":.9}});
+  L({id:"osm-landuse", type:"fill", "source-layer":"landuse", paint:{"fill-color":["match",["get","class"],"residential","#ebe5dc","industrial","#e6dde6","commercial","#f0e0dc","retail","#f0e0dc","cemetery","#d5e4cd","school","#efe9c9","hospital","#f2dcdc","stadium","#d8ecd0","pitch","#cde8c0","#ece6dd"],"fill-opacity":.85}});
+  L({id:"osm-park", type:"fill", "source-layer":"park", paint:{"fill-color":"#c8e4b4","fill-opacity":.8}});
+  L({id:"osm-water", type:"fill", "source-layer":"water", paint:{"fill-color":"#a9cdeb"}});
+  L({id:"osm-waterway", type:"line", "source-layer":"waterway", paint:{"line-color":"#a9cdeb","line-width":["interpolate",["linear"],["zoom"],8,.8,14,3]}});
+  L({id:"osm-building", type:"fill", "source-layer":"building", minzoom:13, paint:{"fill-color":"#ddd3c6","fill-outline-color":"#c4b8a8","fill-opacity":["interpolate",["linear"],["zoom"],13,.4,15,1]}});
+  L({id:"osm-road-casing", type:"line", "source-layer":"transportation", filter:["in",["get","class"],["literal",["motorway","trunk","primary","secondary","tertiary","minor","service"]]],
+     layout:{"line-cap":"round","line-join":"round"}, paint:{"line-color":"#c9bfb2","line-width":["interpolate",["exponential",1.5],["zoom"],8,["match",["get","class"],["motorway","trunk","primary"],1.6,.6],16,["match",["get","class"],["motorway","trunk","primary"],16,["secondary","tertiary"],12,["minor"],9,5]]}});
+  L({id:"osm-road", type:"line", "source-layer":"transportation", filter:["in",["get","class"],["literal",["motorway","trunk","primary","secondary","tertiary","minor","service","track","path"]]],
+     layout:{"line-cap":"round","line-join":"round"}, paint:{"line-color":["match",["get","class"],["motorway","trunk"],"#f6b26b","primary","#fcd27a","secondary","#fbe7a2",["path","track"],"#c9b99a","#ffffff"],
+     "line-width":["interpolate",["exponential",1.5],["zoom"],8,["match",["get","class"],["motorway","trunk","primary"],1,.3],16,["match",["get","class"],["motorway","trunk","primary"],13,["secondary","tertiary"],10,["minor"],7,["path","track"],1.5,3.5]]}});
+  L({id:"osm-rail", type:"line", "source-layer":"transportation", filter:["==",["get","class"],"rail"], paint:{"line-color":"#9a9a9a","line-width":1.2,"line-dasharray":[3,3]}});
+  L({id:"osm-roadname", type:"symbol", "source-layer":"transportation_name", minzoom:13, layout:{"symbol-placement":"line","text-field":["coalesce",["get","name:ru"],["get","name"]],"text-font":["Noto Sans Regular"],"text-size":11}, paint:{"text-color":"#5a5048","text-halo-color":"#fff","text-halo-width":1.2}});
+  L({id:"osm-housenum", type:"symbol", "source-layer":"housenumber", minzoom:17, layout:{"text-field":["get","housenumber"],"text-font":["Noto Sans Regular"],"text-size":10}, paint:{"text-color":"#8a7d70"}});
+}
 function buildMapLayers(){
   addLabels();
-  for(const [k,b] of Object.entries(BASES))
+  for(const [k,b] of Object.entries(BASES)){
+    if(b.vector){ addOsmBase(); continue; }
     addRaster("base-"+k,{type:"raster",tiles:b.tiles,tileSize:256,maxzoom:b.max,attribution:b.attr},{visible:k===base});
+  }
   addSatellite();
   addRaster("precip",{type:"raster",tiles:[gibs("IMERG_Precipitation_Rate","GoogleMapsCompatible_Level6","png")],tileSize:256,maxzoom:6,attribution:"NASA GPM IMERG"},{paint:{"raster-opacity":["interpolate",["linear"],["zoom"],4,.85,7,.5,10,.3]}});
   addExtraLayers();
@@ -840,6 +862,7 @@ function buildMapLayers(){
 function vis(id, v){ if(map.getLayer(id)) map.setLayoutProperty(id,"visibility",v?"visible":"none"); }
 function applyOverlays(){
   for(const k of Object.keys(BASES)) vis("base-"+k, k===base);
+  for(const id of OSM_IDS) vis(id, base === "osm");
   cloudsApply(); globeWindApply(); lightningApply();
   vis("precip", on.precip);
   (map.__labelIds||[]).forEach(id => vis(id, on.labels));
@@ -2298,7 +2321,8 @@ const fmtLoc = (dt, w) => dt && !isNaN(dt) ? new Date(dt.getTime() + w.utc_offse
 Object.assign(BASES, {
   physical:   {name:"Физическая", sub:"Рельеф: горы, равнины, реки", sw:"linear-gradient(135deg,#d6dfae,#b19468 50%,#86acd0)", tiles:[`${ESRI}/World_Physical_Map/MapServer/tile/{z}/{y}/{x}`], max:8, attr:"© Esri, US National Park Service"},
   topo:       {name:"Топографическая", sub:"Рельеф с дорогами и городами", sw:"linear-gradient(135deg,#e9e3cf,#9bbf8a 50%,#c9a77c)", tiles:[`${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`], max:19, attr:"© Esri, HERE, Garmin, OpenStreetMap"},
-  street:     {name:"Улицы", sub:"Подробная карта дорог и улиц", sw:"linear-gradient(135deg,#f3efe6,#ffd27a 45%,#9cc4e8)", tiles:[`${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`], max:19, attr:"© Esri, HERE, Garmin, OpenStreetMap"},
+  osm:        {name:"Улицы (свежая)", sub:"OpenStreetMap, обновляется каждую неделю: новые дома и районы", sw:"linear-gradient(135deg,#f2efe9,#ddd3c6 45%,#a9cdeb)", vector:true},
+  street:     {name:"Улицы (Esri)", sub:"Карта дорог Esri; в Беларуси может отставать на годы", sw:"linear-gradient(135deg,#f3efe6,#ffd27a 45%,#9cc4e8)", tiles:[`${ESRI}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`], max:19, attr:"© Esri, HERE, Garmin, OpenStreetMap"},
   natgeo:     {name:"Атлас", sub:"В стиле географического атласа", sw:"linear-gradient(135deg,#f0e6c8,#c8b98a 50%,#8fb2c7)", tiles:[`${ESRI}/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}`], max:16, attr:"© Esri, National Geographic"},
   ocean:      {name:"Океаны", sub:"Рельеф морского дна", sw:"linear-gradient(135deg,#bfe1f2,#5a9fcf 50%,#1f4e86)", tiles:[`${ESRI}/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}`], max:13, attr:"© Esri, GEBCO, NOAA"},
   bluemarble: {name:"Голубой мрамор", sub:"Земля из космоса, NASA", sw:"linear-gradient(135deg,#2f5f8f,#5f8f4f 50%,#e8e0c8)", tiles:[gibs("BlueMarble_ShadedRelief_Bathymetry","GoogleMapsCompatible_Level8","jpeg")], max:8, attr:"NASA Blue Marble"},

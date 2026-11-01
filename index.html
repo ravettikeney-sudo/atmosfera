@@ -777,7 +777,7 @@ const OVERLAYS = {
   labels: {name:"Названия и границы", sub:"Страны, регионы, города — по-русски", sw:"linear-gradient(135deg,#253247,#536b8f)", def:true},
   temps:  {name:"Температура в городах", sub:"Сейчас, в 90 городах мира", sw:"linear-gradient(90deg,#3f9de8,#8ee6b0,#ffd35c,#ff6a3d)", def:true},
   clouds: {name:"Облака сейчас", sub:"Вся планета без швов, спутники EUMETSAT, NOAA, JMA", sw:"linear-gradient(135deg,#e9eef5,#7d93ad 60%,#28344a)", def:false},
-  ir:     {name:"Облака (инфракрасный)", sub:"Снимок целиком: высокие холодные облака ярче", sw:"linear-gradient(135deg,#fff,#7c8ea8 50%,#000)", def:false},
+  ir:     {name:"Облака по высоте", sub:"Видно и ночью: белые — средние, голубые и сиреневые — высокие грозовые", sw:"linear-gradient(135deg,#fff,#7c8ea8 50%,#000)", def:false},
   radar:  {name:"Радар осадков", sub:"Дождь и снег за последние 2 часа", sw:"linear-gradient(135deg,#38c172,#ffd35c 50%,#e8455c)", def:false},
   precip: {name:"Осадки со спутника", sub:"Вся планета, NASA IMERG", sw:"linear-gradient(135deg,#2fa8ff,#7b5cff 50%,#ff4fa0)", def:false}
 };
@@ -826,7 +826,7 @@ function buildMapLayers(){
   for(const [k,b] of Object.entries(BASES))
     addRaster("base-"+k,{type:"raster",tiles:b.tiles,tileSize:256,maxzoom:b.max,attribution:b.attr},{visible:k===base});
   addSatellite();
-  addRaster("precip",{type:"raster",tiles:[gibs("IMERG_Precipitation_Rate","GoogleMapsCompatible_Level6","png")],tileSize:256,maxzoom:6,attribution:"NASA GPM IMERG"},{paint:{"raster-opacity":.85}});
+  addRaster("precip",{type:"raster",tiles:[gibs("IMERG_Precipitation_Rate","GoogleMapsCompatible_Level6","png")],tileSize:256,maxzoom:6,attribution:"NASA GPM IMERG"},{paint:{"raster-opacity":["interpolate",["linear"],["zoom"],4,.85,7,.5,10,.3]}});
   addExtraLayers();
   applyOverlays();
 }
@@ -2290,13 +2290,51 @@ on.terrain = false; // 3D always starts flat
 function nightPolygon(date){
   const s = SC.subsolar(date), rad = Math.PI/180, dc = (Math.abs(s.lat) < 0.1 ? 0.1 : s.lat)*rad, pts = [];
   for(let lon = -180; lon <= 180; lon += 2){ const ha = (lon - s.lng)*rad; pts.push([lon, Math.atan(-Math.cos(ha)/Math.tan(dc))/rad]); }
-  const pole = s.lat > 0 ? -89.9 : 89.9;
-  return {type:"FeatureCollection", features:[{type:"Feature", properties:{}, geometry:{type:"Polygon", coordinates:[[...pts, [180,pole], [-180,pole], pts[0]]]}}]};
+  const pole = s.lat > 0 ? -85 : 85, term = lon => pts[Math.round((lon + 180)/2)][1];
+  /* one huge polygon gets triangulated wrongly on the globe (light wedges); use narrow 10° strips with dense edges */
+  const feats = [];
+  for(let L = -180; L < 180; L += 10){
+    const ring = [];
+    for(let lon = L; lon <= L + 10; lon += 2) ring.push([lon, Math.max(-85, Math.min(85, term(lon)))]);
+    const t1 = ring[ring.length-1][1], t0 = ring[0][1];
+    for(let k = 1; k <= 8; k++) ring.push([L + 10, t1 + (pole - t1)*k/8]);
+    for(let lon = L + 10 - 2; lon >= L; lon -= 2) ring.push([lon, pole]);
+    for(let k = 7; k >= 1; k--) ring.push([L, t0 + (pole - t0)*k/8]);
+    ring.push(ring[0]);
+    feats.push({type:"Feature", properties:{}, geometry:{type:"Polygon", coordinates:[ring]}});
+  }
+  return {type:"FeatureCollection", features:feats};
 }
+/* night shade drawn per pixel from the sun's height: soft twilight, no polygon artefacts on the globe */
+let nightStamp = Math.floor(Date.now()/600000);
+maplibregl.addProtocol("night", async params => {
+  const m = params.url.match(/:\/\/(\d+)\/(\d+)\/(\d+)\?t=(\d+)/), z = +m[1], tx = +m[2], ty = +m[3], t = +m[4]*600000 + 300000;
+  const sun = SC.subsolar(new Date(t)), rad = Math.PI/180, sd = Math.sin(sun.lat*rad), cd = Math.cos(sun.lat*rad);
+  const R = 64, cv = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(R, R) : Object.assign(document.createElement("canvas"), {width:R, height:R});
+  const cx = cv.getContext("2d"), img = cx.createImageData(R, R), d = img.data, n = 2**z;
+  for(let py = 0; py < R; py++){
+    const Ym = Math.PI*(1 - 2*(ty + (py + .5)/R)/n), lat = Math.atan(Math.sinh(Ym)), sl = Math.sin(lat), cl = Math.cos(lat);
+    for(let px = 0; px < R; px++){
+      const lon = ((tx + (px + .5)/R)/n*360 - 180)*rad;
+      const elev = Math.asin(sl*sd + cl*cd*Math.cos(lon - sun.lng*rad))/rad;
+      let a = (2 - elev)/14; a = a <= 0 ? 0 : a >= 1 ? 1 : a*a*(3 - 2*a);
+      const o = (py*R + px)*4; d[o] = 1; d[o+1] = 5; d[o+2] = 26; d[o+3] = 255*a;
+    }
+  }
+  cx.putImageData(img, 0, 0);
+  const blob = cv.convertToBlob ? await cv.convertToBlob({type:"image/png"}) : await new Promise(res => cv.toBlob(res, "image/png"));
+  return {data: await blob.arrayBuffer()};
+});
+function nightSource(){ return {type:"raster", tiles:[`night://{z}/{x}/{y}?t=${nightStamp}`], tileSize:256, maxzoom:5}; }
 function addExtraLayers(){
-  map.addSource("night", {type:"geojson", data: nightPolygon(new Date())});
-  map.addLayer({id:"night", type:"fill", source:"night", layout:{visibility:"none"}, paint:{"fill-color":"#01051a","fill-opacity":["interpolate",["linear"],["zoom"],0,.58,5,.5,8,.25,10,0],"fill-antialias":false}}, LABELS_FIRST);
-  setInterval(() => { const s = map.getSource("night"); if(s && on.daynight) s.setData(nightPolygon(new Date())); }, 5*60*1000);
+  map.addSource("night", nightSource());
+  map.addLayer({id:"night", type:"raster", source:"night", layout:{visibility:"none"}, paint:{"raster-opacity":["interpolate",["linear"],["zoom"],0,.62,5,.5,8,.25,10,0],"raster-fade-duration":0,"raster-resampling":"linear"}}, LABELS_FIRST);
+  setInterval(() => {
+    const st = Math.floor(Date.now()/600000); if(st === nightStamp || !map.getSource("night")) return;
+    nightStamp = st; const v = map.getLayoutProperty("night", "visibility");
+    map.removeLayer("night"); map.removeSource("night"); map.addSource("night", nightSource());
+    map.addLayer({id:"night", type:"raster", source:"night", layout:{visibility:v}, paint:{"raster-opacity":["interpolate",["linear"],["zoom"],0,.62,5,.5,8,.25,10,0],"raster-fade-duration":0,"raster-resampling":"linear"}}, LABELS_FIRST);
+  }, 60*1000);
   const empty = {type:"FeatureCollection", features:[]};
   for(const id of ["ev-fires","ev-quakes","ev-aurora","ev-cyclones"]) map.addSource(id, {type:"geojson", data: empty});
   map.addLayer({id:"ev-aurora", type:"heatmap", source:"ev-aurora", layout:{visibility:"none"}, paint:{
@@ -2370,7 +2408,7 @@ function setTerrain(v){
 function applyExtraLayers(){
   if(!map.getLayer("night")) return;
   vis("night", on.daynight);
-  if(on.daynight) map.getSource("night").setData(nightPolygon(new Date()));
+
   if(on.terrain !== terrainOn) setTerrain(on.terrain);
   for(const [k, ids] of Object.entries(EV_LAYERS)){
     ids.forEach(id => vis(id, on[k]));
@@ -2976,6 +3014,29 @@ function cloudTile(z, x, y, t){
   const key = `${z}/${x}/${y}/${t||""}/${satBust}`;
   if(cloudCache.has(key)) return cloudCache.get(key);
   const pr = (async () => {
+    const ck = `https://atm.cache/clouds/v3/${key}`;
+    try{ const hit = await (await caches.open("atm-clouds")).match(ck); if(hit) return {cloud: await hit.arrayBuffer()}; }catch(e){}
+    const res = await cloudTileFresh(z, x, y, t);
+    try{ (await caches.open("atm-clouds")).put(ck, new Response(res.cloud.slice(0), {headers:{"content-type":"image/png"}})); }catch(e){}
+    return res;
+  })();
+  cloudCache.set(key, pr); pr.catch(() => cloudCache.delete(key));
+  if(cloudCache.size > 400) cloudCache.delete(cloudCache.keys().next().value);
+  return pr;
+}
+/* trim the on-disk cloud cache once per launch: keep only the newest 600 tiles */
+(async () => { try{ const c = await caches.open("atm-clouds"), k = await c.keys(); for(const r of k.slice(0, Math.max(0, k.length - 600))) c.delete(r); }catch(e){} })();
+/* satellites see the polar regions at a grazing angle: icy ground there looks like cloud, so fade it out above ~60° */
+function polarFade(z, ty){
+  const out = new Float32Array(256);
+  for(let py = 0; py < 256; py++){
+    const Ym = MERC - (ty + (py + .5)/256)*2*MERC/2**z, lat = Math.abs((2*Math.atan(Math.exp(Ym/6378137)) - Math.PI/2)*180/Math.PI);
+    out[py] = Math.max(0, Math.min(1, (72 - lat)/14));
+  }
+  return out;
+}
+async function cloudTileFresh(z, x, y, t){
+  {
     const W = 256 + 2*CM;
     const r = await fetch(`${EUM_CLOUDS}&width=${W}&height=${W}&bbox=${tileBBox(z, x, y, CM)}${t ? "&time="+t : ""}${satBust ? "&_="+satBust : ""}`);
     if(!r.ok) throw new Error("clouds " + r.status);
@@ -2985,7 +3046,7 @@ function cloudTile(z, x, y, t){
     const sd = sx.getImageData(0, 0, W, W).data, A = new Float32Array(W*W);
     for(let i = 0, p = 0; i < sd.length; i += 4, p++){ let a = (sd[i] - 92)/(205 - 92); a = a <= 0 ? 0 : a >= 1 ? 1 : Math.pow(a, .8); A[p] = a * sd[i+3]/255; }
     const out = mk(256, 256), ox = out.getContext("2d"), img = ox.createImageData(256, 256), d = img.data;
-    const at = (px, py) => A[py*W + px];
+    const at = (px, py) => A[py*W + px], PF = polarFade(z, y);
     for(let y = 0; y < 256; y++) for(let x = 0; x < 256; x++){
       const X = x + CM, Y = y + CM, a = at(X, Y), o = (y*256 + x)*4;
       /* light from the upper left: brighter tops, darker undersides -> clouds look puffy */
@@ -2993,7 +3054,7 @@ function cloudTile(z, x, y, t){
       const shade = Math.max(150, Math.min(255, 226 + 29*a - 70*relief));
       /* shadow cast down-right on the ground, under the cloud itself */
       const sa = (at(X-6, Y-7) + at(X-7, Y-6) + at(X-5, Y-8) + at(X-6, Y-6))/4, shA = .47*sa*(1 - a);
-      const cA = .94*a, outA = cA + shA*(1 - cA);
+      const cA = .94*a*PF[y], outA = cA + shA*PF[y]*(1 - cA);
       if(outA <= 0.003){ d[o+3] = 0; continue; }
       d[o]   = (shade - 8*(1-a))*cA/outA + 6*shA*(1-cA)/outA;
       d[o+1] = (shade - 4*(1-a))*cA/outA + 12*shA*(1-cA)/outA;
@@ -3003,10 +3064,7 @@ function cloudTile(z, x, y, t){
     ox.putImageData(img, 0, 0);
     const blob = c => c.convertToBlob ? c.convertToBlob({type:"image/png"}) : new Promise(res => c.toBlob(res, "image/png"));
     return {cloud: await (await blob(out)).arrayBuffer()};
-  })();
-  cloudCache.set(key, pr); pr.catch(() => cloudCache.delete(key));
-  if(cloudCache.size > 400) cloudCache.delete(cloudCache.keys().next().value);
-  return pr;
+  }
 }
 for(const [proto, part] of [["eumclouds","cloud"]])
   maplibregl.addProtocol(proto, async params => {
@@ -3040,7 +3098,7 @@ function showCloudFrame(i){
     const id = `cld-${k}`; if(!map.getLayer(id)) continue;
     const keep = k === i || (ctl.timer && k === next);
     if(!keep){ map.removeLayer(id); map.removeSource(id); ctl.added.delete(k); continue; }
-    map.setLayoutProperty(id, "visibility", on.clouds ? "visible" : "none"); map.setPaintProperty(id, "raster-opacity", k === i ? 1 : 0);
+    map.setLayoutProperty(id, "visibility", on.clouds ? "visible" : "none"); map.setPaintProperty(id, "raster-opacity", k === i ? FADE(1) : 0);
   }
   const dt = new Date(ctl.frames[i]), loc = current?.wx ? new Date(dt.getTime() + current.wx.utc_offset_seconds*1000) : null;
   const hm = d => d.toISOString().slice(11,16), today = new Date().toISOString().slice(0,10);
@@ -3070,8 +3128,33 @@ $("#cplay").onclick = () => {
   showCloudFrame(ctl.idx);
 };
 $("#cframe").oninput = e => { cloudPause(); const i = +e.target.value; addCloudFrame(i); showCloudFrame(i); };
+const IR_STOPS = [[96,[150,170,200,0]],[118,[175,192,215,.45]],[150,[225,232,245,.68]],[195,[255,255,255,.78]],[215,[120,215,255,.85]],[235,[190,120,255,.9]]];
+maplibregl.addProtocol("eumir", async (params, ac) => {
+  const m = params.url.match(/:\/\/(\d+)\/(\d+)\/(\d+)/), [z, x, y] = [+m[1], +m[2], +m[3]];
+  const ck = `https://atm.cache/ir/v2/${z}/${x}/${y}/${cloudFrames().slice(-1)[0]}/${satBust}`;
+  try{ const hit = await (await caches.open("atm-clouds")).match(ck); if(hit) return {data: await hit.arrayBuffer()}; }catch(e){}
+  const r = await fetch(`${EUM_CLOUDS}&width=256&height=256&bbox=${tileBBox(z, x, y)}${satBust ? "&_="+satBust : ""}`, {signal: ac.signal});
+  if(!r.ok) throw new Error("ir " + r.status);
+  const bmp = await createImageBitmap(await r.blob());
+  const cv = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(256, 256) : Object.assign(document.createElement("canvas"), {width:256, height:256});
+  const cx = cv.getContext("2d"); cx.drawImage(bmp, 0, 0, 256, 256);
+  const img = cx.getImageData(0, 0, 256, 256), d = img.data, PF = polarFade(z, y);
+  for(let i = 0; i < d.length; i += 4){
+    const L = d[i], a0 = d[i+3]/255*PF[(i>>10)]; let c = IR_STOPS[0][1];
+    if(L >= IR_STOPS[IR_STOPS.length-1][0]) c = IR_STOPS[IR_STOPS.length-1][1];
+    else for(let k = 1; k < IR_STOPS.length; k++) if(L < IR_STOPS[k][0]){ const [l0,c0] = IR_STOPS[k-1], [l1,c1] = IR_STOPS[k], f = Math.max(0, (L-l0)/(l1-l0)); c = c0.map((v,j) => v + (c1[j]-v)*f); break; }
+    d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2]; d[i+3] = 255*c[3]*a0;
+  }
+  cx.putImageData(img, 0, 0);
+  const blob = cv.convertToBlob ? await cv.convertToBlob({type:"image/png"}) : await new Promise(res => cv.toBlob(res, "image/png"));
+  const buf = await blob.arrayBuffer();
+  try{ (await caches.open("atm-clouds")).put(ck, new Response(buf.slice(0), {headers:{"content-type":"image/png"}})); }catch(e){}
+  return {data: buf};
+});
+/* satellite pictures are coarse: the closer you zoom, the more they step aside so the map stays readable */
+const FADE = max => ["interpolate", ["linear"], ["zoom"], 4, max, 7, max*.55, 10, max*.3];
 function addSatellite(){
-  addRaster("ir-world", {type:"raster", tiles:[`${EUM_CLOUDS}&width=256&height=256&bbox={bbox-epsg-3857}${satBust ? "&_=" + satBust : ""}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":.85, "raster-fade-duration":300}});
+  addRaster("ir-world", {type:"raster", tiles:[`eumir://{z}/{x}/{y}`], tileSize:256, maxzoom:6, attribution:"Облака © EUMETSAT, NOAA, JMA"}, {paint:{"raster-opacity":FADE(1), "raster-fade-duration":300}});
 }
 setInterval(() => {
   const f = cloudFrames();
